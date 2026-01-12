@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카플랫폼 - 최저가 견적 신청</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background"></div>
+    
+    <section id="main-cont">
+        <!-- 왼쪽 슬라이더 영역 -->
+        <div class="slide-wrap">
+            <div class="main-cont-swiper">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide swiper-slide-active">
+                        <img id="gif1" src="images/h-1.gif" alt="h-1" class="slide-img active">
+                        <img id="gif2" src="images/h-2.gif" alt="h-2" class="slide-img">
+                        <img id="img3" src="images/h-3.jpg" alt="h-3" class="slide-img">
+                    </div>
+                </div>
+                <div class="swiper-pagination">
+                    <span class="swiper-pagination-bullet swiper-pagination-bullet-active"></span>
+                    <span class="swiper-pagination-bullet"></span>
+                    <span class="swiper-pagination-bullet"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 오른쪽 폼 영역 -->
+        <div class="cont-inner">
+            <div class="logo-area">
+                <img src="banner.png" alt="배너" class="banner">
+            </div>
+            <div class="title">
+                <ul class="progress">
+                    <li class="act_research research-open"><span class="action open-action">STEP 01</span></li>
+                    <li><span>STEP 02</span></li>
+                    <li><span>STEP 03</span></li>
+                    <li><span>STEP 04</span></li>
+                    <li><span>STEP 05</span></li>
+                    <li><span>STEP 06</span></li>
+                </ul>
+            </div>
+
+            <form name="frm" method="post" autocomplete="off">
+                <section class="section step01-wrap active">
+                    <div class="step01-inner">
+                        <span>STEP. 01</span>
+                        <p>내가 원하는 차,<br>얼마나 할인 가능할까?</p>
+                        <p class="sub-txt">(AI 프로그램을 통한 실시간 비교견적!)</p>
+                        <p class="txt">※ 신용불량 제외 모두 상담 가능합니다.<br> (신용불량은 상담이 불가능합니다.) </p>
+                    </div>
+                    <a href="javascript:void(0);" onclick="nextButton();" class="cta-btn">국내 최저가 확인해보기</a>
+                </section>
+
+                <section class="section step02-inner">
+                    <span>STEP. 02</span>
+                    <p>소속 구분을 선택하여주세요!</p>
+                    <ul>
+                        <li>
+                            <input type="radio" class="blind" id="personal" name="wr_7" value="개인" onchange="if(this.checked) nextButton()">
+                            <label for="personal">개인</label>
+                        </li>
+                        <li>
+                            <input type="radio" class="blind" id="sole" name="wr_7" value="개인사업자" onchange="if(this.checked) nextButton()">
+                            <label for="sole">개인사업자</label>
+                        </li>
+                        <li>
+                            <input type="radio" class="blind" id="legal" name="wr_7" value="법인사업자" onchange="if(this.checked) nextButton()">
+                            <label for="legal">법인사업자</label>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="section step03-inner">
+                    <span>STEP. 03</span>
+                    <p>궁금하신 차량 유형을 선택하여주세요!</p>
+                    <ul>
+                        <li>
+                            <input type="radio" class="blind" id="rent" name="wr_3" value="장기렌트" onchange="if(this.checked) nextButton()">
+                            <label for="rent">장기렌트</label>
+                        </li>
+                        <li>
+                            <input type="radio" class="blind" id="lease" name="wr_3" value="리스" onchange="if(this.checked) nextButton()">
+                            <label for="lease">리스</label>
+                        </li>
+                        <li>
+                            <input type="radio" class="blind" id="monthly" name="wr_3" value="할부" onchange="if(this.checked) nextButton()">
+                            <label for="monthly">할부</label>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="section step04-inner">
+                    <span>STEP. 04</span>
+                    <p>원하시는 차량명을 입력하여주세요!</p>
+                    <input type="text" id="user_car" name="wr_4" placeholder="예) 쏘렌토" required="" onkeypress="if(event.key==='Enter') nextButton()">
+                    <a href="javascript:void(0);" onclick="nextButton()" class="cta-btn">확인</a>
+                </section>
+
+                <section class="section step05-inner">
+                    <span>STEP. 05</span>
+                    <p>무료 비교 견적 발송을 위한 연락처와 성함을 <br>기재해주세요!</p>
+                    <input type="text" id="user_name" name="wr_name" placeholder="예) 홍길동" onkeypress="if(event.key==='Enter') nextButton()">
+                    <input type="tel" id="user_phone" name="wr_subject" placeholder="예) 01012345678" maxlength="13" oninput="this.value = this.value.replace(/[^0-9]/g, '')" onkeypress="if(event.key==='Enter') nextButton()">
+                    <div class="info_agree">
+                        <input type="checkbox" name="chk" id="c_privacy" value="1" checked="">
+                        <label for="c_privacy">개인정보 수집 및 이용 동의</label>
+                        <a class="toggle-btn pop-privacy">전문보기</a>
+                    </div>
+                    <a href="javascript:void(0);" onclick="nextButton();" class="cta-btn">확인</a>
+                </section>
+
+                <section class="section step06-inner">
+                    <span>STEP. 06</span>
+                    <p>고객님의 통화 가능시간을<br class="mob-break"> 말씀하여주세요!</p>
+                    <input type="text" id="user_time" name="wr_8" placeholder="예) 오후 2시~4시" onkeypress="if(event.key==='Enter') nextButton()">
+                    <a href="javascript:void(0);" onclick="nextButton();" class="cta-btn ga_button">신청하기</a>
+                </section>
+
+                <section class="section apply-inner">
+                    <strong><span>최저가 견적 신청</span>이 완료되었습니다.</strong>
+                    <small>제공해주신 정보를 통하여<br>상담원이 신속하게 안내드릴 수 있도록 하겠습니다.</small>
+                    <a href="javascript:void(0);" onclick="location.reload()" class="cta-btn">카플랫폼 최저가 프로모션 확인하기</a>
+                </section>
+            </form>
+        </div>
+    </section>
+
+    <!-- 개인정보처리방침 모달 -->
+    <div class="privacy-modal hidden" id="privacyModal">
+        <div class="privacy-modal-content">
+            <button class="close-btn" onclick="closePrivacyModal()">X</button>
+            <h3>[개인정보 수집 및 이용안내]</h3>
+            <p>카플랫폼은 상담신청 및 상품 소개를 위해 고객님의 개인정보 수집, 이용 및 제공에 대한 동의를 받고 있습니다.</p>
+            <p>당사 및 당사 업무수탁자는 「개인정보보호법」, 「정보통신망 이용촉진 및 정보 보호 등에 관한 법률」에 따라 귀하의 개인정보를 다음과 같이 수집·이용하고자 합니다.</p>
+            
+            <ul>
+                <li><strong>개인정보 수집주체</strong> : 카플랫폼</li>
+                <li><strong>개인정보 수집항목</strong> : 고객명, 연락처</li>
+                <li><strong>개인정보 수집,이용목적</strong> : 상품/서비스 소개 및 상담 (전화,문자)</li>
+                <li><strong>개인정보 보유,이용기간</strong> : 수집일로부터 3년(고객 동의 철회시 지체없이 파기)</li>
+            </ul>
+
+            <h3>[개인정보 취급위탁]</h3>
+            <p>당사는 「개인정보보호법」, 「정보통신망 이용촉진 및 정보 보호 등에 관한 법률」에 따라 귀하의 개인정보를 다음과 같이 제3자에게 제공하고자 합니다.</p>
+            <ul>
+                <li><strong>개인정보를 제공받는 자</strong> : 당사와 모집위탁계약을 체결한 자</li>
+                <li><strong>개인정보를 제공받는 자의 이용목적</strong> : 상품/서비스 소개 및 상담</li>
+                <li><strong>제공할 개인정보의 내용</strong> : 연락처</li>
+                <li><strong>제공받는 자의 개인정보 보유·이용 기간</strong> : 동의일로부터 3년</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

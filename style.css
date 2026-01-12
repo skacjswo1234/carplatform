@@ -1,0 +1,534 @@
+/* 페이퍼로지 폰트 정의 */
+@font-face {
+    font-family: 'Paperlogy';
+    src: url('Paperlogy-9Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Paperlogy', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    letter-spacing: -0.05em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('images/background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1;
+}
+
+#main-cont {
+    display: flex;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1200px;
+    height: 634px;
+    background: #000;
+    border-radius: 22px;
+    box-shadow: 0 40px 20px 0 rgba(0, 0, 0, 0.35);
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+}
+
+/* 왼쪽 슬라이더 영역 */
+.slide-wrap {
+    width: 600px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.main-cont-swiper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.swiper-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.swiper-slide {
+    width: 600px;
+    height: 100%;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.swiper-slide {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.swiper-slide img.slide-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: high-quality;
+    -ms-interpolation-mode: nearest-neighbor;
+    image-rendering: auto;
+    z-index: 1;
+    display: block;
+}
+
+.swiper-slide img.slide-img.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+}
+
+/* GIF 화질 개선 */
+.swiper-slide img.slide-img[src$=".gif"] {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: bicubic;
+    image-rendering: auto;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    will-change: opacity;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+}
+
+.swiper-pagination {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.swiper-pagination-bullet {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.swiper-pagination-bullet-active {
+    background: white;
+}
+
+/* 오른쪽 폼 영역 */
+.cont-inner {
+    flex: 1;
+    height: 100%;
+    background: white;
+    padding: 40px;
+    position: relative;
+    overflow-y: auto;
+}
+
+.logo-area {
+    text-align: center;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo {
+    max-width: 200px;
+    height: auto;
+    display: inline-block;
+}
+
+.banner {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.title {
+    margin-bottom: 30px;
+}
+
+.progress {
+    display: flex;
+    list-style: none;
+    gap: 10px;
+    justify-content: center;
+}
+
+.progress li {
+    font-size: 12px;
+    color: #999;
+    padding: 5px 10px;
+}
+
+.progress li.act_research span {
+    color: #ff4444;
+    font-weight: bold;
+}
+
+.section {
+    display: none;
+    text-align: center;
+}
+
+.section.active {
+    display: block;
+}
+
+.section span {
+    display: block;
+    color: #ff6600;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.section p {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+    line-height: 1.4;
+    margin-bottom: 15px;
+}
+
+.section .sub-txt {
+    font-size: 18px;
+    color: #ff4444;
+    font-weight: 500;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.section .txt {
+    font-size: 14px;
+    color: #999;
+    font-weight: normal;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.cta-btn {
+    display: inline-block;
+    width: 100%;
+    padding: 18px;
+    background: #000;
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-top: 20px;
+}
+
+.cta-btn:hover {
+    background: #333;
+}
+
+/* STEP 02, 03 - 라디오 버튼 */
+.step02-inner ul,
+.step03-inner ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.step02-inner label,
+.step03-inner label {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.step02-inner input[type="radio"]:checked + label,
+.step03-inner input[type="radio"]:checked + label {
+    background: #ff4444;
+    color: white;
+    border-color: #ff4444;
+}
+
+.step02-inner label:hover,
+.step03-inner label:hover {
+    border-color: #ff4444;
+    color: #ff4444;
+}
+
+.blind {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+
+/* STEP 04, 05, 06 - 입력 필드 */
+.step04-inner input,
+.step05-inner input,
+.step06-inner input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 16px;
+    margin-bottom: 15px;
+    transition: border-color 0.3s;
+}
+
+.step04-inner input:focus,
+.step05-inner input:focus,
+.step06-inner input:focus {
+    outline: none;
+    border-color: #ff4444;
+}
+
+.step04-inner input.error,
+.step05-inner input.error,
+.step06-inner input.error {
+    border-color: #ff0000;
+    background-color: #fff5f5;
+}
+
+.step02-inner input[type="radio"]:not(:checked) + label,
+.step03-inner input[type="radio"]:not(:checked) + label {
+    border-color: #e0e0e0;
+}
+
+.step02-inner input[type="radio"]:not(:checked) + label.error,
+.step03-inner input[type="radio"]:not(:checked) + label.error {
+    border-color: #ff0000;
+    background-color: #fff5f5;
+}
+
+.step05-inner input {
+    margin-bottom: 15px;
+}
+
+.info_agree {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f5f5f5;
+    border-radius: 10px;
+}
+
+.info_agree label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.info_agree input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: #ff4444;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* 완료 페이지 */
+.apply-inner {
+    text-align: center;
+}
+
+.apply-inner strong {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.apply-inner strong span {
+    color: #ff4444;
+    display: inline;
+}
+
+.apply-inner small {
+    display: block;
+    font-size: 16px;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+/* 개인정보처리방침 모달 */
+.privacy-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.privacy-modal.hidden {
+    display: none;
+}
+
+.privacy-modal-content {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+.privacy-modal-content h3 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 20px 0 15px;
+    color: #333;
+}
+
+.privacy-modal-content p {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.privacy-modal-content ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 20px 0;
+}
+
+.privacy-modal-content li {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #666;
+    margin-bottom: 10px;
+    padding-left: 20px;
+}
+
+.privacy-modal-content li strong {
+    color: #333;
+}
+
+/* 반응형 */
+@media (max-width: 1280px) {
+    #main-cont {
+        width: 90%;
+        max-width: 1200px;
+        height: auto;
+        min-height: 634px;
+        flex-direction: column;
+    }
+    
+    .slide-wrap {
+        width: 100%;
+        height: 300px;
+    }
+    
+    .swiper-slide {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    #main-cont {
+        width: 95%;
+        border-radius: 15px;
+    }
+    
+    .cont-inner {
+        padding: 30px 20px;
+    }
+    
+    .section p {
+        font-size: 22px;
+    }
+    
+    .progress {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .progress li {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}
