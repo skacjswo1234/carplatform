@@ -263,7 +263,8 @@ function nextButton() {
             isValid = validateStep05();
             break;
         case 6:
-            isValid = validateStep06();
+            // STEP 06은 validation 체크하지 않음
+            isValid = true;
             break;
     }
     

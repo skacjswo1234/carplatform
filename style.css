@@ -507,8 +507,8 @@ body {
     
     .slide-wrap {
         width: 100%;
-        height: 400px;
-        min-height: 400px;
+        height: 280px;
+        min-height: 280px;
         border-radius: 15px 15px 0 0;
         position: relative;
         overflow: hidden;
@@ -655,8 +655,8 @@ body {
     }
     
     .slide-wrap {
-        height: 350px;
-        min-height: 350px;
+        height: 240px;
+        min-height: 240px;
         border-radius: 12px 12px 0 0;
         position: relative;
         overflow: hidden;
