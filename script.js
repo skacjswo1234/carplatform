@@ -2,13 +2,13 @@
 let currentStep = 1;
 const totalSteps = 5;
 
-// 이미지/비디오 순차 무한 반복 재생 (8초 간격)
+// 이미지/비디오 순차 재생 (비디오는 끝까지 재생 후 다음으로 전환)
 let gif1 = document.getElementById('gif1');
 let gif2 = document.getElementById('gif2');
 let img3 = document.getElementById('img3');
 let currentIndex = 0;
 const images = [];
-const slideDuration = 8000; // 8초
+let imageTimeout = null; // h-3.jpg 표시 타이머
 
 function initImages() {
     // 이미지/비디오 요소 확인
@@ -29,23 +29,45 @@ function initImages() {
         media.style.display = 'block';
         media.style.position = 'absolute';
         
-        // 비디오의 경우 재생을 위해 load() 호출
+        // 비디오의 경우 ended 이벤트 리스너 추가
         if (media.tagName === 'VIDEO') {
-            media.load();
-            media.play().catch(e => {
-                console.log('비디오 자동 재생 실패:', e);
+            media.addEventListener('ended', function() {
+                // 비디오가 끝나면 다음으로 전환
+                nextMedia();
             });
+            
+            // 비디오 로드
+            media.load();
         }
     });
     
-    // 첫 번째 이미지/비디오 즉시 표시
+    // 첫 번째 비디오 즉시 표시 및 재생
     showImage(0);
+}
+
+// 다음 미디어로 전환
+function nextMedia() {
+    // 현재 타이머가 있으면 클리어
+    if (imageTimeout) {
+        clearTimeout(imageTimeout);
+        imageTimeout = null;
+    }
     
-    // 8초마다 다음 이미지/비디오로 전환
-    setInterval(() => {
-        currentIndex = (currentIndex + 1) % images.length;
-        showImage(currentIndex);
-    }, slideDuration);
+    // 다음 인덱스로 이동
+    currentIndex = (currentIndex + 1) % images.length;
+    
+    const nextMedia = images[currentIndex];
+    
+    // 다음 미디어 표시
+    showImage(currentIndex);
+    
+    // 이미지인 경우 (h-3.jpg) 일정 시간 후 다시 첫 번째 비디오로
+    if (nextMedia.tagName === 'IMG') {
+        imageTimeout = setTimeout(() => {
+            currentIndex = 0;
+            showImage(0);
+        }, 3000); // 3초 후 다시 h-1.mp4로
+    }
 }
 
 function showImage(index) {
@@ -55,8 +77,9 @@ function showImage(index) {
             media.style.opacity = '1';
             media.style.visibility = 'visible';
             media.style.zIndex = '10';
-            // 비디오인 경우 재생
+            // 비디오인 경우 처음부터 재생
             if (media.tagName === 'VIDEO') {
+                media.currentTime = 0; // 처음부터 재생
                 media.play().catch(e => {
                     console.log('비디오 재생 실패:', e);
                 });
@@ -66,9 +89,10 @@ function showImage(index) {
             media.style.opacity = '0';
             media.style.visibility = 'hidden';
             media.style.zIndex = '1';
-            // 비디오인 경우 일시정지
+            // 비디오인 경우 일시정지 및 처음으로 리셋
             if (media.tagName === 'VIDEO') {
                 media.pause();
+                media.currentTime = 0;
             }
         }
     });
