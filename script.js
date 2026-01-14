@@ -1,6 +1,6 @@
 // 현재 단계 추적
 let currentStep = 1;
-const totalSteps = 6;
+const totalSteps = 5;
 
 // 이미지 순차 무한 반복 재생 (5초 간격)
 let gif1 = document.getElementById('gif1');
@@ -104,6 +104,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Alert 모달 외부 클릭 시 닫기
+    const alertModal = document.getElementById('alertModal');
+    if (alertModal) {
+        alertModal.addEventListener('click', function(e) {
+            if (e.target === alertModal) {
+                closeAlertModal();
+            }
+        });
+    }
 });
 
 // 에러 상태 제거 함수
@@ -126,9 +136,6 @@ function removeErrorState(step) {
             document.getElementById('user_name')?.classList.remove('error');
             document.getElementById('user_phone')?.classList.remove('error');
             break;
-        case 6:
-            document.getElementById('user_time')?.classList.remove('error');
-            break;
     }
 }
 
@@ -140,7 +147,7 @@ function validateStep02() {
         document.querySelectorAll('input[name="wr_7"] + label').forEach(label => {
             label.classList.add('error');
         });
-        alert('소속 구분을 선택해주세요.');
+        showAlertModal('소속 구분을 선택해주세요.');
         return false;
     }
     return true;
@@ -153,7 +160,7 @@ function validateStep03() {
         document.querySelectorAll('input[name="wr_3"] + label').forEach(label => {
             label.classList.add('error');
         });
-        alert('차량 유형을 선택해주세요.');
+        showAlertModal('차량 유형을 선택해주세요.');
         return false;
     }
     return true;
@@ -166,13 +173,13 @@ function validateStep04() {
     
     if (!carName) {
         carNameInput.classList.add('error');
-        alert('차량명을 입력해주세요.');
+        showAlertModal('차량명을 입력해주세요.');
         carNameInput.focus();
         return false;
     }
     if (carName.length < 2) {
         carNameInput.classList.add('error');
-        alert('차량명을 정확히 입력해주세요.');
+        showAlertModal('차량명을 정확히 입력해주세요.');
         carNameInput.focus();
         return false;
     }
@@ -189,14 +196,14 @@ function validateStep05() {
     
     if (!userName) {
         userNameInput.classList.add('error');
-        alert('성함을 입력해주세요.');
+        showAlertModal('성함을 입력해주세요.');
         userNameInput.focus();
         return false;
     }
     
     if (!userPhone) {
         userPhoneInput.classList.add('error');
-        alert('연락처를 입력해주세요.');
+        showAlertModal('연락처를 입력해주세요.');
         userPhoneInput.focus();
         return false;
     }
@@ -206,13 +213,13 @@ function validateStep05() {
     const phoneNumber = userPhone.replace(/[^0-9]/g, '');
     if (!phonePattern.test(phoneNumber)) {
         userPhoneInput.classList.add('error');
-        alert('올바른 연락처를 입력해주세요. (숫자만 입력, 10-11자리)');
+        showAlertModal('올바른 연락처를 입력해주세요.\n(숫자만 입력, 10-11자리)');
         userPhoneInput.focus();
         return false;
     }
     
     if (!privacyAgree) {
-        alert('개인정보 수집 및 이용에 동의해주세요.');
+        showAlertModal('개인정보 수집 및 이용에 동의해주세요.');
         document.getElementById('c_privacy').focus();
         return false;
     }
@@ -227,13 +234,13 @@ function validateStep06() {
     
     if (!callTime) {
         callTimeInput.classList.add('error');
-        alert('통화 가능시간을 입력해주세요.');
+        showAlertModal('통화 가능시간을 입력해주세요.');
         callTimeInput.focus();
         return false;
     }
     if (callTime.length < 3) {
         callTimeInput.classList.add('error');
-        alert('통화 가능시간을 정확히 입력해주세요.');
+        showAlertModal('통화 가능시간을 정확히 입력해주세요.');
         callTimeInput.focus();
         return false;
     }
@@ -261,10 +268,6 @@ function nextButton() {
             break;
         case 5:
             isValid = validateStep05();
-            break;
-        case 6:
-            // STEP 06은 validation 체크하지 않음
-            isValid = true;
             break;
     }
     
@@ -310,4 +313,23 @@ function nextButton() {
 // 개인정보처리방침 모달
 function closePrivacyModal() {
     document.getElementById('privacyModal').classList.add('hidden');
+}
+
+// Alert 모달
+function showAlertModal(message) {
+    const modal = document.getElementById('alertModal');
+    const messageElement = document.getElementById('alertMessage');
+    if (messageElement) {
+        messageElement.textContent = message;
+    }
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeAlertModal() {
+    const modal = document.getElementById('alertModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }

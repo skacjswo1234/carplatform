@@ -38,6 +38,11 @@ body {
     z-index: -1;
 }
 
+.main-wrapper {
+    position: relative;
+    min-height: 100vh;
+}
+
 #main-cont {
     display: flex;
     position: absolute;
@@ -58,6 +63,34 @@ body {
     height: 100%;
     position: relative;
     overflow: hidden;
+}
+
+.ai-badge {
+    position: absolute;
+    top: calc(50% - 317px - 70px);
+    left: calc(50% - 300px);
+    transform: translateX(-50%);
+    z-index: 200;
+    font-size: 26px;
+    font-weight: 900;
+    padding: 12px 30px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 25px;
+    white-space: nowrap;
+    animation: blink 1.5s infinite;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.5px;
+}
+
+@keyframes blink {
+    0%, 100% {
+        color: #000;
+        border: 2px solid #000;
+    }
+    50% {
+        color: #ff0000;
+        border: 2px solid #ff0000;
+    }
 }
 
 .main-cont-swiper {
@@ -478,6 +511,92 @@ body {
     color: #333;
 }
 
+/* Alert 모달 */
+.alert-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease;
+}
+
+.alert-modal.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.alert-modal-content {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 20px;
+    max-width: 400px;
+    width: calc(100% - 40px);
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    position: relative;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.alert-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.alert-message {
+    font-size: 18px;
+    font-weight: 500;
+    color: #333;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    word-break: keep-all;
+}
+
+.alert-confirm-btn {
+    width: 100%;
+    padding: 15px;
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.alert-confirm-btn:hover {
+    background: #ff3333;
+}
+
+.alert-confirm-btn:active {
+    background: #cc0000;
+}
+
 /* 모바일 반응형 */
 @media screen and (max-width: 768px) {
     body {
@@ -490,6 +609,14 @@ body {
         justify-content: center;
     }
     
+    .main-wrapper {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
     #main-cont {
         position: relative;
         top: auto;
@@ -499,7 +626,7 @@ body {
         max-width: 500px;
         height: auto;
         border-radius: 15px;
-        margin: 0 auto;
+        margin: 60px auto 40px;
         display: flex;
         flex-direction: column;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -538,6 +665,25 @@ body {
         height: 100%;
         object-fit: cover;
         display: block;
+    }
+    
+    .swiper-slide img.slide-img[src$=".jpg"] {
+        object-fit: contain;
+        object-position: center;
+        background: #000;
+    }
+    
+    .ai-badge {
+        position: absolute;
+        font-size: 18px;
+        padding: 10px 20px;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        max-width: 500px;
+        text-align: center;
+        z-index: 100;
     }
     
     .cont-inner {
@@ -652,6 +798,7 @@ body {
     #main-cont {
         width: calc(100% - 15px);
         border-radius: 12px;
+        margin: 150px auto 10px;
     }
     
     .slide-wrap {
@@ -667,6 +814,25 @@ body {
         height: 100%;
         object-fit: cover;
         display: block;
+    }
+    
+    .swiper-slide img.slide-img[src$=".jpg"] {
+        object-fit: contain;
+        object-position: center;
+        background: #000;
+    }
+    
+    .ai-badge {
+        position: absolute;
+        font-size: 16px;
+        padding: 8px 18px;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 30px);
+        max-width: 480px;
+        text-align: center;
+        z-index: 100;
     }
     
     .cont-inner {
