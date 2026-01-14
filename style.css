@@ -798,7 +798,7 @@ body {
     #main-cont {
         width: calc(100% - 15px);
         border-radius: 12px;
-        margin: 45px auto 20px;
+        margin: 55px auto 20px;
     }
     
     .slide-wrap {
