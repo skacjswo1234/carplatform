@@ -2,7 +2,7 @@
 let currentStep = 1;
 const totalSteps = 5;
 
-// 이미지 순차 무한 반복 재생 (5초 간격)
+// 이미지/비디오 순차 무한 반복 재생 (5초 간격)
 let gif1 = document.getElementById('gif1');
 let gif2 = document.getElementById('gif2');
 let img3 = document.getElementById('img3');
@@ -11,9 +11,9 @@ const images = [];
 const slideDuration = 5000; // 5초
 
 function initImages() {
-    // 이미지 요소 확인
+    // 이미지/비디오 요소 확인
     if (!gif1 || !gif2 || !img3) {
-        console.error('이미지 요소를 찾을 수 없습니다.');
+        console.error('이미지/비디오 요소를 찾을 수 없습니다.');
         // 재시도
         setTimeout(initImages, 200);
         return;
@@ -23,27 +23,25 @@ function initImages() {
     images[1] = gif2;
     images[2] = img3;
     
-    // 모든 이미지를 항상 로드하고 표시하도록 설정 (GIF 무한 재생을 위해)
-    images.forEach((img, index) => {
-        // 이미지가 항상 DOM에 존재하도록 보장
-        img.style.display = 'block';
-        img.style.position = 'absolute';
+    // 모든 이미지/비디오를 항상 로드하고 표시하도록 설정
+    images.forEach((media, index) => {
+        // 요소가 항상 DOM에 존재하도록 보장
+        media.style.display = 'block';
+        media.style.position = 'absolute';
         
-        // GIF의 경우 재생을 위해 항상 로드되도록 강제
-        if (img.src && img.src.includes('.gif')) {
-            // GIF 재생을 위해 src를 다시 설정하여 재생 강제
-            const originalSrc = img.src;
-            img.src = '';
-            setTimeout(() => {
-                img.src = originalSrc;
-            }, 50);
+        // 비디오의 경우 재생을 위해 load() 호출
+        if (media.tagName === 'VIDEO') {
+            media.load();
+            media.play().catch(e => {
+                console.log('비디오 자동 재생 실패:', e);
+            });
         }
     });
     
-    // 첫 번째 이미지 즉시 표시
+    // 첫 번째 이미지/비디오 즉시 표시
     showImage(0);
     
-    // 5초마다 다음 이미지로 전환
+    // 5초마다 다음 이미지/비디오로 전환
     setInterval(() => {
         currentIndex = (currentIndex + 1) % images.length;
         showImage(currentIndex);
@@ -51,17 +49,27 @@ function initImages() {
 }
 
 function showImage(index) {
-    images.forEach((img, i) => {
+    images.forEach((media, i) => {
         if (i === index) {
-            img.classList.add('active');
-            img.style.opacity = '1';
-            img.style.visibility = 'visible';
-            img.style.zIndex = '10';
+            media.classList.add('active');
+            media.style.opacity = '1';
+            media.style.visibility = 'visible';
+            media.style.zIndex = '10';
+            // 비디오인 경우 재생
+            if (media.tagName === 'VIDEO') {
+                media.play().catch(e => {
+                    console.log('비디오 재생 실패:', e);
+                });
+            }
         } else {
-            img.classList.remove('active');
-            img.style.opacity = '0';
-            img.style.visibility = 'hidden';
-            img.style.zIndex = '1';
+            media.classList.remove('active');
+            media.style.opacity = '0';
+            media.style.visibility = 'hidden';
+            media.style.zIndex = '1';
+            // 비디오인 경우 일시정지
+            if (media.tagName === 'VIDEO') {
+                media.pause();
+            }
         }
     });
     updatePagination(index);
