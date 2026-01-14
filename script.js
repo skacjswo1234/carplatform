@@ -2,13 +2,13 @@
 let currentStep = 1;
 const totalSteps = 5;
 
-// 이미지/비디오 순차 무한 반복 재생 (5초 간격)
+// 이미지/비디오 순차 무한 반복 재생 (8초 간격)
 let gif1 = document.getElementById('gif1');
 let gif2 = document.getElementById('gif2');
 let img3 = document.getElementById('img3');
 let currentIndex = 0;
 const images = [];
-const slideDuration = 5000; // 5초
+const slideDuration = 8000; // 8초
 
 function initImages() {
     // 이미지/비디오 요소 확인
@@ -41,7 +41,7 @@ function initImages() {
     // 첫 번째 이미지/비디오 즉시 표시
     showImage(0);
     
-    // 5초마다 다음 이미지/비디오로 전환
+    // 8초마다 다음 이미지/비디오로 전환
     setInterval(() => {
         currentIndex = (currentIndex + 1) % images.length;
         showImage(currentIndex);
