@@ -626,7 +626,7 @@ body {
         max-width: 500px;
         height: auto;
         border-radius: 15px;
-        margin: 60px auto 40px;
+        margin: 50px auto 20px;
         display: flex;
         flex-direction: column;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -798,7 +798,7 @@ body {
     #main-cont {
         width: calc(100% - 15px);
         border-radius: 12px;
-        margin: 150px auto 10px;
+        margin: 45px auto 20px;
     }
     
     .slide-wrap {
@@ -826,7 +826,7 @@ body {
         position: absolute;
         font-size: 16px;
         padding: 8px 18px;
-        top: 100px;
+        top: 8px;
         left: 50%;
         transform: translateX(-50%);
         width: calc(100% - 30px);
