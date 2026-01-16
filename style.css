@@ -300,6 +300,23 @@ body {
     background: #333;
 }
 
+.cta-btn.neon-blink {
+    color: #fff;
+    text-shadow: none;
+    animation: colorBlink 1s infinite steps(1);
+}
+
+@keyframes colorBlink {
+    0%,
+    49% {
+        color: #fff;
+    }
+    50%,
+    100% {
+        color: #ff2b2b;
+    }
+}
+
 /* STEP 02, 03 - 라디오 버튼 */
 .step02-inner ul,
 .step03-inner ul {
