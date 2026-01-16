@@ -71,6 +71,7 @@ body {
     height: 100%;
     position: relative;
     overflow: hidden;
+    background: #000;
 }
 
 .ai-badge {
@@ -138,6 +139,7 @@ body {
     image-rendering: auto;
     z-index: 1;
     display: block;
+    background: #000;
 }
 
 .swiper-slide img.slide-img.active,
