@@ -9,6 +9,10 @@ let filteredInquiries = [];
 
 // DOM 로드 완료 후 초기화
 document.addEventListener('DOMContentLoaded', function() {
+    // 로그인 체크 (간단한 방법 - 실제로는 쿠키나 localStorage 사용 가능)
+    // 여기서는 단순히 admin.html에 직접 접근해도 되도록 함
+    // 필요시 localStorage나 쿠키로 로그인 상태 확인 가능
+    
     initEventListeners();
     loadInquiries();
 });
@@ -97,14 +101,9 @@ function switchPage(page) {
     // 페이지 제목 업데이트
     const titles = {
         'inquiries': '문의 리스트',
-        'statistics': '통계'
+        'password': '비밀번호 변경'
     };
     document.getElementById('pageTitle').textContent = titles[page] || '';
-
-    // 통계 페이지인 경우 통계 로드
-    if (page === 'statistics') {
-        loadStatistics();
-    }
 }
 
 // 문의 목록 불러오기
@@ -324,52 +323,61 @@ async function updateStatus(id, status) {
 
         renderInquiries();
         closeModal();
-        
-        if (document.getElementById('statisticsPage').classList.contains('active')) {
-            loadStatistics();
-        }
     } catch (error) {
         console.error('Error updating status:', error);
         showError('상태 업데이트에 실패했습니다.');
     }
 }
 
-// 통계 로드
-async function loadStatistics() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/statistics`);
-        
-        if (!response.ok) {
-            throw new Error('통계 데이터를 불러오는데 실패했습니다.');
-        }
+// 비밀번호 변경
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordForm = document.getElementById('passwordChangeForm');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const messageDiv = document.getElementById('passwordMessage');
+            
+            // 새 비밀번호와 확인이 일치하는지 체크 (간단 체크)
+            if (newPassword !== confirmPassword) {
+                messageDiv.textContent = '새 비밀번호가 일치하지 않습니다.';
+                messageDiv.className = 'password-message error';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        currentPassword: currentPassword,
+                        newPassword: newPassword
+                    }),
+                });
 
-        const stats = await response.json();
-        
-        document.getElementById('totalInquiries').textContent = stats.total || 0;
-        document.getElementById('newInquiries').textContent = stats.new || 0;
-        document.getElementById('processingInquiries').textContent = stats.processing || 0;
-        document.getElementById('completedInquiries').textContent = stats.completed || 0;
-
-        // 차트는 나중에 구현 가능
-    } catch (error) {
-        console.error('Error loading statistics:', error);
-        // 통계 로드 실패 시 로컬 데이터로 계산
-        calculateLocalStatistics();
+                const result = await response.json();
+                
+                if (result.success) {
+                    messageDiv.textContent = '비밀번호가 성공적으로 변경되었습니다.';
+                    messageDiv.className = 'password-message success';
+                    passwordForm.reset();
+                } else {
+                    messageDiv.textContent = result.error || '비밀번호 변경에 실패했습니다.';
+                    messageDiv.className = 'password-message error';
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                messageDiv.textContent = '비밀번호 변경 중 오류가 발생했습니다.';
+                messageDiv.className = 'password-message error';
+            }
+        });
     }
-}
-
-// 로컬 데이터로 통계 계산
-function calculateLocalStatistics() {
-    const total = allInquiries.length;
-    const newCount = allInquiries.filter(item => item.status === 'new' || !item.status).length;
-    const processingCount = allInquiries.filter(item => item.status === 'processing').length;
-    const completedCount = allInquiries.filter(item => item.status === 'completed').length;
-
-    document.getElementById('totalInquiries').textContent = total;
-    document.getElementById('newInquiries').textContent = newCount;
-    document.getElementById('processingInquiries').textContent = processingCount;
-    document.getElementById('completedInquiries').textContent = completedCount;
-}
+});
 
 // 유틸리티 함수
 function escapeHtml(text) {
