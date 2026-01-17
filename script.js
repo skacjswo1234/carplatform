@@ -332,14 +332,51 @@ function nextButton() {
             progressItems[currentStep - 1].classList.add('act_research');
         }
     } else {
-        // 완료 페이지
-        const applySection = document.querySelector('.apply-inner');
-        if (applySection) {
-            applySection.classList.add('active');
+        // Step 5 완료 - 데이터 저장
+        if (currentStep === 6) {
+            await saveInquiry();
+            // 완료 페이지
+            const applySection = document.querySelector('.apply-inner');
+            if (applySection) {
+                applySection.classList.add('active');
+            }
         }
     }
     
     return true;
+}
+
+// 문의 데이터 저장
+async function saveInquiry() {
+    const formData = {
+        name: document.getElementById('user_name').value.trim(),
+        phone: document.getElementById('user_phone').value.replace(/[^0-9]/g, ''),
+        affiliation: document.querySelector('input[name="wr_7"]:checked')?.value || null,
+        vehicle_type: document.querySelector('input[name="wr_3"]:checked')?.value || null,
+        car_name: document.getElementById('user_car').value.trim() || null
+    };
+
+    try {
+        const response = await fetch('/api/inquiries', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData),
+        });
+
+        if (!response.ok) {
+            throw new Error('데이터 저장에 실패했습니다.');
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            console.log('문의가 성공적으로 저장되었습니다.');
+        }
+    } catch (error) {
+        console.error('Error saving inquiry:', error);
+        // 저장 실패해도 완료 페이지는 보여줌
+    }
 }
 
 // 개인정보처리방침 모달

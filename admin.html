@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카플랫폼 - 관리자 페이지</title>
+    <link rel="preload" href="Paperlogy-9Black.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- 모바일 메뉴 버튼 -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="메뉴 열기">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- 사이드 네비게이션 -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="images/logo.png" alt="카플랫폼 로고" class="logo">
+            <h1>관리자 페이지</h1>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#" class="nav-item active" data-page="inquiries">문의 리스트</a></li>
+            <li><a href="#" class="nav-item" data-page="statistics">통계</a></li>
+        </ul>
+    </nav>
+
+    <!-- 모바일 오버레이 -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <div class="content-header">
+            <h2 id="pageTitle">문의 리스트</h2>
+            <button class="refresh-btn" id="refreshBtn">새로고침</button>
+        </div>
+
+        <!-- 문의 리스트 페이지 -->
+        <div class="page-content active" id="inquiriesPage">
+            <div class="filters">
+                <select id="filterStatus" class="filter-select">
+                    <option value="">전체</option>
+                    <option value="new">신규</option>
+                    <option value="processing">처리중</option>
+                    <option value="completed">완료</option>
+                </select>
+                <input type="text" id="searchInput" class="search-input" placeholder="성함 또는 연락처로 검색...">
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>번호</th>
+                            <th>신청일시</th>
+                            <th>성함</th>
+                            <th>연락처</th>
+                            <th>소속 구분</th>
+                            <th>차량 유형</th>
+                            <th>차량명</th>
+                            <th>상태</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inquiriesTableBody">
+                        <tr>
+                            <td colspan="9" class="loading">데이터를 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination" id="pagination">
+                <!-- 페이지네이션 버튼이 여기에 동적으로 생성됩니다 -->
+            </div>
+        </div>
+
+        <!-- 통계 페이지 -->
+        <div class="page-content" id="statisticsPage">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>전체 문의</h3>
+                    <p class="stat-number" id="totalInquiries">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>신규 문의</h3>
+                    <p class="stat-number" id="newInquiries">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>처리중</h3>
+                    <p class="stat-number" id="processingInquiries">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>완료</h3>
+                    <p class="stat-number" id="completedInquiries">0</p>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <h3>소속 구분별 통계</h3>
+                <div class="chart-container">
+                    <canvas id="affiliationChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <h3>차량 유형별 통계</h3>
+                <div class="chart-container">
+                    <canvas id="vehicleTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 상세 정보 모달 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>문의 상세 정보</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 상세 정보가 여기에 동적으로 생성됩니다 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelBtn">취소</button>
+                <button class="btn-primary" id="saveBtn">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

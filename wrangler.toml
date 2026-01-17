@@ -1,0 +1,8 @@
+name = "carplatform"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "carplatform-db"
+database_name = "carplatform-db"
+database_id = "459f61d7-bf8b-4b0a-8cc2-505ece4fb8b3"
