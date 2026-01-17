@@ -164,7 +164,7 @@ function renderInquiries() {
 
     tbody.innerHTML = pageInquiries.map((inquiry, index) => {
         const rowIndex = start + index + 1;
-        const createdDate = new Date(inquiry.created_at).toLocaleString('ko-KR');
+        const createdDate = formatKoreanDateTime(inquiry.created_at);
         
         return `
             <tr>
@@ -244,7 +244,7 @@ async function showDetail(id) {
     }
 
     const modalBody = document.getElementById('modalBody');
-    const createdDate = new Date(inquiry.created_at).toLocaleString('ko-KR');
+    const createdDate = formatKoreanDateTime(inquiry.created_at);
 
     modalBody.innerHTML = `
         <div class="detail-item">
@@ -376,6 +376,45 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// 한국 시간대로 날짜 형식 변환
+function formatKoreanDateTime(dateString) {
+    if (!dateString) return '-';
+    
+    try {
+        // SQLite에서 가져온 날짜 문자열을 파싱
+        // 형식: 'YYYY-MM-DD HH:MM:SS' (이미 한국 시간)
+        let date;
+        
+        if (dateString.includes('T')) {
+            // ISO 형식인 경우
+            date = new Date(dateString);
+        } else {
+            // SQLite 형식인 경우 (YYYY-MM-DD HH:MM:SS)
+            // 문자열을 그대로 한국 시간으로 해석
+            // 시간대 정보를 명시적으로 추가하여 파싱
+            const datePart = dateString.substring(0, 10); // YYYY-MM-DD
+            const timePart = dateString.substring(11, 19) || '00:00:00'; // HH:MM:SS
+            // +09:00을 추가하여 한국 시간대임을 명시
+            date = new Date(datePart + 'T' + timePart + '+09:00');
+        }
+        
+        // 한국 시간대로 표시 (이미 한국 시간이므로 그대로 표시)
+        return date.toLocaleString('ko-KR', {
+            timeZone: 'Asia/Seoul',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return dateString;
+    }
 }
 
 function formatPhone(phone) {

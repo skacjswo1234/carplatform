@@ -65,10 +65,24 @@ export async function onRequestPost(context) {
 
     const db = env['carplatform-db'];
 
+    // 한국 시간대(KST, UTC+9)로 현재 시간 생성
+    // 현재 UTC 시간에 9시간을 더한 후 ISO 형식으로 변환
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000); // UTC 시간
+    const kstTime = new Date(utcTime + (9 * 60 * 60 * 1000)); // UTC+9
+    // SQLite 호환 형식: YYYY-MM-DD HH:MM:SS
+    const year = kstTime.getFullYear();
+    const month = String(kstTime.getMonth() + 1).padStart(2, '0');
+    const day = String(kstTime.getDate()).padStart(2, '0');
+    const hours = String(kstTime.getHours()).padStart(2, '0');
+    const minutes = String(kstTime.getMinutes()).padStart(2, '0');
+    const seconds = String(kstTime.getSeconds()).padStart(2, '0');
+    const kstDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
     const result = await db.prepare(`
       INSERT INTO inquiries (wr_name, wr_subject, wr_7, wr_3, wr_4, status, created_at)
-      VALUES (?, ?, ?, ?, ?, 'new', datetime('now'))
-    `).bind(name, phone, affiliation || null, vehicle_type || null, car_name || null).run();
+      VALUES (?, ?, ?, ?, ?, 'new', ?)
+    `).bind(name, phone, affiliation || null, vehicle_type || null, car_name || null, kstDateTime).run();
 
     if (result.success) {
       return new Response(JSON.stringify({
