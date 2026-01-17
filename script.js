@@ -280,7 +280,7 @@ function validateStep06() {
 }
 
 // 다음 단계로 이동 (Validation 포함)
-function nextButton() {
+async function nextButton() {
     let isValid = true;
     
     // 현재 단계별 validation 체크
@@ -308,6 +308,17 @@ function nextButton() {
         return false;
     }
     
+    // Step 5인 경우 데이터 저장 후 완료 모달 표시
+    if (currentStep === 5) {
+        // 데이터 저장
+        await saveInquiry();
+        
+        // 완료 모달 표시
+        showCompletionModal();
+        
+        return true;
+    }
+    
     // Validation 통과 시 다음 단계로 이동
     const currentSection = document.querySelector(`.step0${currentStep}-wrap, .step0${currentStep}-inner`);
     if (currentSection) {
@@ -330,16 +341,6 @@ function nextButton() {
         
         if (progressItems[currentStep - 1]) {
             progressItems[currentStep - 1].classList.add('act_research');
-        }
-    } else {
-        // Step 5 완료 - 데이터 저장
-        if (currentStep === 6) {
-            await saveInquiry();
-            // 완료 페이지
-            const applySection = document.querySelector('.apply-inner');
-            if (applySection) {
-                applySection.classList.add('active');
-            }
         }
     }
     
@@ -401,4 +402,51 @@ function closeAlertModal() {
     if (modal) {
         modal.classList.add('hidden');
     }
+}
+
+// 완료 모달 표시
+let redirectTimer = null;
+let countdownSeconds = 5;
+
+function showCompletionModal() {
+    const modal = document.getElementById('completionModal');
+    const countdownElement = document.getElementById('completionCountdown');
+    
+    if (!modal) return;
+    
+    // 모달 표시
+    modal.classList.remove('hidden');
+    
+    // 카운트다운 시작
+    countdownSeconds = 5;
+    updateCountdown(countdownElement);
+    
+    redirectTimer = setInterval(() => {
+        countdownSeconds--;
+        updateCountdown(countdownElement);
+        
+        if (countdownSeconds <= 0) {
+            clearInterval(redirectTimer);
+            redirectToMainSite();
+        }
+    }, 1000);
+}
+
+function updateCountdown(element) {
+    if (element && countdownSeconds > 0) {
+        element.textContent = `${countdownSeconds}초 후 자동으로 이동합니다.`;
+    } else if (element && countdownSeconds <= 0) {
+        element.textContent = '이동 중...';
+    }
+}
+
+// 메인 사이트로 리다이렉트
+function redirectToMainSite() {
+    if (redirectTimer) {
+        clearInterval(redirectTimer);
+        redirectTimer = null;
+    }
+    
+    // 새 창에서 열기 또는 현재 창에서 이동
+    window.location.href = 'https://carplatform1.cafe24.com';
 }
