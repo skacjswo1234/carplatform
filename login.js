@@ -35,7 +35,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (result.success) {
-                // 로그인 성공 - 관리자 페이지로 이동
+                // 로그인 성공 - localStorage에 로그인 상태 저장
+                localStorage.setItem('admin_logged_in', 'true');
+                
+                // 관리자 페이지로 이동
                 window.location.href = 'admin.html';
             } else {
                 // 로그인 실패

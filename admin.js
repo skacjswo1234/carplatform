@@ -9,13 +9,29 @@ let filteredInquiries = [];
 
 // DOM 로드 완료 후 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    // 로그인 체크 (간단한 방법 - 실제로는 쿠키나 localStorage 사용 가능)
-    // 여기서는 단순히 admin.html에 직접 접근해도 되도록 함
-    // 필요시 localStorage나 쿠키로 로그인 상태 확인 가능
+    // 로그인 상태 확인
+    checkLoginStatus();
     
     initEventListeners();
     loadInquiries();
 });
+
+// 로그인 상태 확인
+function checkLoginStatus() {
+    const isLoggedIn = localStorage.getItem('admin_logged_in') === 'true';
+    
+    if (!isLoggedIn) {
+        // 로그인되지 않았으면 로그인 페이지로 리다이렉트
+        window.location.href = 'login.html';
+        return;
+    }
+}
+
+// 로그아웃 함수 (필요시 사용)
+function logout() {
+    localStorage.removeItem('admin_logged_in');
+    window.location.href = 'login.html';
+}
 
 // 이벤트 리스너 초기화
 function initEventListeners() {
