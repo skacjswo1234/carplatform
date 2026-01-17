@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
     wr_3 TEXT,
     wr_4 TEXT,
     status TEXT DEFAULT 'new',
+    memo TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

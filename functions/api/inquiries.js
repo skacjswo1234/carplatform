@@ -14,6 +14,7 @@ export async function onRequestGet(context) {
         wr_3 as vehicle_type,
         wr_4 as car_name,
         status,
+        memo,
         created_at
       FROM inquiries
       ORDER BY created_at DESC

@@ -564,6 +564,68 @@ body {
     color: var(--text-primary);
 }
 
+/* 모달 상세 레이아웃 */
+.modal-detail-layout {
+    display: flex;
+    gap: 30px;
+}
+
+.detail-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.detail-right {
+    flex: 1;
+    min-width: 0;
+}
+
+.memo-textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: 'PaperlogyRegular', sans-serif;
+    resize: vertical;
+    transition: all 0.3s ease;
+}
+
+.memo-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
+}
+
+.memo-textarea::placeholder {
+    color: var(--text-secondary);
+}
+
+.btn-delete {
+    background: var(--danger) !important;
+    border-color: var(--danger) !important;
+    color: white !important;
+}
+
+.btn-delete:hover {
+    background: #d32f2f !important;
+    border-color: #d32f2f !important;
+}
+
+@media screen and (max-width: 768px) {
+    .modal-detail-layout {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .memo-textarea {
+        min-height: 200px;
+    }
+}
+
 .modal-footer {
     display: flex;
     justify-content: flex-end;

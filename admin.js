@@ -191,9 +191,10 @@ function renderInquiries() {
                 <td>${escapeHtml(inquiry.vehicle_type || '-')}</td>
                 <td>${escapeHtml(inquiry.car_name || '-')}</td>
                 <td><span class="status-badge ${inquiry.status || 'new'}">${getStatusText(inquiry.status || 'new')}</span></td>
-                <td>
+                    <td>
                     <button class="btn-action" onclick="showDetail(${inquiry.id})">상세</button>
                     <button class="btn-action" onclick="updateStatus(${inquiry.id}, '${getNextStatus(inquiry.status || 'new')}')">${getNextStatusText(inquiry.status || 'new')}</button>
+                    <button class="btn-action btn-delete" onclick="deleteInquiry(${inquiry.id})">삭제</button>
                 </td>
             </tr>
         `;
@@ -262,42 +263,52 @@ async function showDetail(id) {
     const createdDate = formatKoreanDateTime(inquiry.created_at);
 
     modalBody.innerHTML = `
-        <div class="detail-item">
-            <div class="detail-label">번호</div>
-            <div class="detail-value">${inquiry.id}</div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-label">신청일시</div>
-            <div class="detail-value">${createdDate}</div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-label">성함</div>
-            <div class="detail-value">${escapeHtml(inquiry.name || '-')}</div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-label">연락처</div>
-            <div class="detail-value">${formatPhone(inquiry.phone || '-')}</div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-label">소속 구분</div>
-            <div class="detail-value">${escapeHtml(inquiry.affiliation || '-')}</div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-label">차량 유형</div>
-            <div class="detail-value">${escapeHtml(inquiry.vehicle_type || '-')}</div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-label">차량명</div>
-            <div class="detail-value">${escapeHtml(inquiry.car_name || '-')}</div>
-        </div>
-        <div class="detail-item">
-            <div class="detail-label">상태</div>
-            <div class="detail-value">
-                <select id="modalStatus" class="filter-select" style="width: 100%; margin-top: 10px;">
-                    <option value="new" ${inquiry.status === 'new' ? 'selected' : ''}>신규</option>
-                    <option value="processing" ${inquiry.status === 'processing' ? 'selected' : ''}>처리중</option>
-                    <option value="completed" ${inquiry.status === 'completed' ? 'selected' : ''}>완료</option>
-                </select>
+        <div class="modal-detail-layout">
+            <div class="detail-left">
+                <div class="detail-item">
+                    <div class="detail-label">번호</div>
+                    <div class="detail-value">${inquiry.id}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">신청일시</div>
+                    <div class="detail-value">${createdDate}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">성함</div>
+                    <div class="detail-value">${escapeHtml(inquiry.name || '-')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">연락처</div>
+                    <div class="detail-value">${formatPhone(inquiry.phone || '-')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">소속 구분</div>
+                    <div class="detail-value">${escapeHtml(inquiry.affiliation || '-')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">차량 유형</div>
+                    <div class="detail-value">${escapeHtml(inquiry.vehicle_type || '-')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">차량명</div>
+                    <div class="detail-value">${escapeHtml(inquiry.car_name || '-')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">상태</div>
+                    <div class="detail-value">
+                        <select id="modalStatus" class="filter-select" style="width: 100%; margin-top: 10px;">
+                            <option value="new" ${inquiry.status === 'new' ? 'selected' : ''}>신규</option>
+                            <option value="processing" ${inquiry.status === 'processing' ? 'selected' : ''}>처리중</option>
+                            <option value="completed" ${inquiry.status === 'completed' ? 'selected' : ''}>완료</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="detail-right">
+                <div class="detail-item">
+                    <div class="detail-label">메모</div>
+                    <textarea id="modalMemo" class="memo-textarea" placeholder="메모를 입력하세요...">${escapeHtml(inquiry.memo || '')}</textarea>
+                </div>
             </div>
         </div>
     `;
@@ -305,7 +316,8 @@ async function showDetail(id) {
     // 저장 버튼 이벤트
     document.getElementById('saveBtn').onclick = function() {
         const newStatus = document.getElementById('modalStatus').value;
-        updateStatus(inquiry.id, newStatus);
+        const newMemo = document.getElementById('modalMemo').value;
+        updateInquiry(inquiry.id, newStatus, newMemo);
     };
 
     document.getElementById('detailModal').classList.add('active');
