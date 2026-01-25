@@ -93,6 +93,10 @@ https://script.google.com/macros/s/AKfycbx.../exec
   - Apps Script **실행 로그**:  
     (편집기에서 **실행** → **실행 로그**) 에러 있는지 확인
 
+- **doPost 실행 시 에러 (postData undefined)**
+  - `doPost`는 **웹앱 POST 호출 전용**이라, 에디터에서 직접 실행하면 오류가 납니다.
+  - 테스트는 `testDoPost()`를 실행하거나, 실제 웹앱 URL로 POST 테스트하세요.
+
 - **시트에 안 쌓임**
   - `SHEET_ID`가 **정확한 스프레드시트 ID**인지 확인
   - 해당 스프레드시트를 **배포한 Google 계정**으로 열 수 있는지 확인

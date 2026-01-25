@@ -18,6 +18,9 @@ const SHEET_ID = '1HA00ZW1Xgw0aSUk7XYF12E42lEpwE9nQgmOszPdlE9s';
 // ========== 메인: POST 요청 처리 ==========
 function doPost(e) {
   try {
+    if (!e) {
+      return jsonResponse({ success: false, error: 'doPost는 웹앱 호출로만 실행됩니다.' }, 400);
+    }
     const json = parseRequestData(e);
     const { name, phone, affiliation, vehicle_type, car_name, created_at, id } = json;
 
@@ -54,6 +57,24 @@ function doGet(e) {
     ok: true,
     message: '문의 알림 웹앱입니다. POST로 문의 데이터를 보내주세요.'
   })).setMimeType(ContentService.MimeType.JSON);
+}
+
+// 에디터에서 테스트용 (실제 서비스는 웹앱 POST로 호출)
+function testDoPost() {
+  const mock = {
+    postData: {
+      contents: JSON.stringify({
+        name: '홍길동',
+        phone: '01012345678',
+        affiliation: '개인',
+        vehicle_type: '장기렌트',
+        car_name: '쏘렌토',
+        created_at: getKstNow(),
+        id: 'test'
+      })
+    }
+  };
+  return doPost(mock);
 }
 
 // ========== 이메일 발송 ==========
