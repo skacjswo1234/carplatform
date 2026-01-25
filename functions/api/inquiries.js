@@ -86,9 +86,10 @@ export async function onRequestPost(context) {
     `).bind(name, phone, affiliation || null, vehicle_type || null, car_name || null, kstDateTime).run();
 
     if (result.success) {
+      const inquiryId = result.meta.last_row_id;
       return new Response(JSON.stringify({
         success: true,
-        id: result.meta.last_row_id
+        id: inquiryId
       }), {
         headers: {
           'Content-Type': 'application/json',

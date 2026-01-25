@@ -347,6 +347,25 @@ async function nextButton() {
     return true;
 }
 
+// Apps Script 웹앱 URL (직접 호출)
+const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw6eG32DIJ_yjjhNJTh9UQDP8nk1cF2QFrZZulq6WDLS9doMO9dfR6uB7IryhZwBZ9Y/exec';
+
+async function sendInquiryToAppsScript(formData) {
+    if (!APPS_SCRIPT_WEB_APP_URL) return;
+
+    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) {
+        console.warn('Apps Script 전송 실패:', response.status);
+    }
+}
+
 // 문의 데이터 저장
 async function saveInquiry() {
     const formData = {
@@ -377,6 +396,13 @@ async function saveInquiry() {
     } catch (error) {
         console.error('Error saving inquiry:', error);
         // 저장 실패해도 완료 페이지는 보여줌
+    }
+
+    // Apps Script로 전송 (메일 + 시트 기록)
+    try {
+        await sendInquiryToAppsScript(formData);
+    } catch (error) {
+        console.warn('Apps Script 전송 오류:', error);
     }
 }
 
