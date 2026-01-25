@@ -357,6 +357,32 @@ async function updateStatus(id, status) {
     }
 }
 
+// 문의 삭제
+async function deleteInquiry(id) {
+    const confirmed = confirm('정말 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.');
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/inquiries/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error('문의 삭제에 실패했습니다.');
+        }
+
+        // 로컬 상태에서 제거
+        allInquiries = allInquiries.filter(item => item.id !== id);
+        filteredInquiries = filteredInquiries.filter(item => item.id !== id);
+
+        renderInquiries();
+        renderPagination();
+    } catch (error) {
+        console.error('Error deleting inquiry:', error);
+        showError('문의 삭제에 실패했습니다.');
+    }
+}
+
 // 비밀번호 변경
 document.addEventListener('DOMContentLoaded', function() {
     const passwordForm = document.getElementById('passwordChangeForm');

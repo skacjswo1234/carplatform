@@ -353,17 +353,18 @@ const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw6eG32
 async function sendInquiryToAppsScript(formData) {
     if (!APPS_SCRIPT_WEB_APP_URL) return;
 
-    const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+    const params = new URLSearchParams();
+    Object.entries(formData).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
+        params.append(key, String(value));
     });
 
-    if (!response.ok) {
-        console.warn('Apps Script 전송 실패:', response.status);
-    }
+    // Apps Script는 CORS 응답이 없으므로 no-cors + form 방식으로 전송
+    await fetch(APPS_SCRIPT_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: params,
+    });
 }
 
 // 문의 데이터 저장

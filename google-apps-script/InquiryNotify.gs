@@ -18,7 +18,7 @@ const SHEET_ID = '1HA00ZW1Xgw0aSUk7XYF12E42lEpwE9nQgmOszPdlE9s';
 // ========== 메인: POST 요청 처리 ==========
 function doPost(e) {
   try {
-    const json = e.postData.contents ? JSON.parse(e.postData.contents) : {};
+    const json = parseRequestData(e);
     const { name, phone, affiliation, vehicle_type, car_name, created_at, id } = json;
 
     if (!name || !phone) {
@@ -122,6 +122,30 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function parseRequestData(e) {
+  if (!e) return {};
+
+  if (e.postData && e.postData.contents) {
+    try {
+      return JSON.parse(e.postData.contents);
+    } catch (err) {
+      // JSON 파싱 실패 시 form 데이터로 처리
+    }
+  }
+
+  const params = e.parameter || {};
+  return normalizeParams(params);
+}
+
+function normalizeParams(params) {
+  const data = {};
+  Object.keys(params || {}).forEach(key => {
+    const value = params[key];
+    data[key] = Array.isArray(value) ? value[0] : value;
+  });
+  return data;
 }
 
 function jsonResponse(obj, status) {
