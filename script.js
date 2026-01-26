@@ -475,5 +475,5 @@ function redirectToMainSite() {
     }
     
     // 새 창에서 열기 또는 현재 창에서 이동
-    window.location.href = 'https://carplatform.shop';
+    window.location.href = 'https://carplatform1.cafe24.com/';
 }
