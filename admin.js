@@ -383,6 +383,11 @@ async function deleteInquiry(id) {
     }
 }
 
+// 인라인 onclick에서 접근 가능하도록 전역 등록
+window.showDetail = showDetail;
+window.updateStatus = updateStatus;
+window.deleteInquiry = deleteInquiry;
+
 // 비밀번호 변경
 document.addEventListener('DOMContentLoaded', function() {
     const passwordForm = document.getElementById('passwordChangeForm');

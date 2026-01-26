@@ -14,6 +14,7 @@ const RECIPIENT_EMAIL = 'andukgi@gmail.com';
 // 구글시트에 남기려면: 시트 URL의 /d/ 와 /edit 사이 ID를 넣으세요. 빈 문자열이면 시트 기록 안 함.
 // 예: https://docs.google.com/spreadsheets/d/여기ID값/edit
 const SHEET_ID = '1HA00ZW1Xgw0aSUk7XYF12E42lEpwE9nQgmOszPdlE9s';
+const SHEET_NAME = '시트1';
 
 // ========== 메인: POST 요청 처리 ==========
 function doPost(e) {
@@ -109,15 +110,17 @@ function sendInquiryEmail(data) {
 // ========== 구글시트 추가 (선택) ==========
 function appendToSheet(sheetId, row) {
   const ss = SpreadsheetApp.openById(sheetId.trim());
-  const sh = ss.getSheets()[0];
+  const sh = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
+  if (!sh) throw new Error('시트를 찾을 수 없습니다.');
+
   const lastRow = sh.getLastRow();
 
   // 첫 행이 비어 있으면 헤더 먼저 넣기
   if (lastRow === 0) {
     sh.getRange(1, 1, 1, 6).setValues([['접수일시', '성함', '연락처', '소속', '차량유형', '차량명']]);
-    sh.getRange(2, 1, 2, 6).setValues([row]);
+    sh.getRange(2, 1, 1, 6).setValues([row]);
   } else {
-    sh.getRange(lastRow + 1, 1, lastRow + 1, 6).setValues([row]);
+    sh.getRange(lastRow + 1, 1, 1, 6).setValues([row]);
   }
 }
 

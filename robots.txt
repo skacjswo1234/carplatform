@@ -1,0 +1,25 @@
+# 카플랫폼 견적 신청 - Robots.txt
+
+User-agent: *
+
+# 허용: 메인 페이지
+Allow: /
+Allow: /index.html
+Allow: /images/
+Allow: /style.css
+Allow: /script.js
+
+# 차단: 관리자 페이지
+Disallow: /admin.html
+Disallow: /admin.css
+Disallow: /admin.js
+Disallow: /login.html
+Disallow: /login.css
+Disallow: /login.js
+
+# 차단: API 엔드포인트
+Disallow: /api/
+Disallow: /functions/
+
+# 사이트맵
+Sitemap: https://carplatform.shop/sitemap.xml
