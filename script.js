@@ -2,6 +2,33 @@
 let currentStep = 1;
 const totalSteps = 5;
 
+function showLoadingOverlay(message = '잠시만 기다려주세요...') {
+    const overlay = document.getElementById('loadingOverlay');
+    if (!overlay) return;
+
+    const textEl = document.getElementById('loadingText');
+    if (textEl) textEl.textContent = message;
+
+    overlay.classList.remove('hidden');
+    document.body.classList.add('is-loading');
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (!overlay) return;
+
+    overlay.classList.add('hidden');
+    document.body.classList.remove('is-loading');
+}
+
+function setStep5SubmitDisabled(disabled) {
+    const btn = document.querySelector('.step05-inner .cta-btn');
+    if (!btn) return;
+
+    btn.classList.toggle('is-disabled', disabled);
+    btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+}
+
 // 이미지/비디오 순차 재생 (비디오는 끝까지 재생 후 다음으로 전환)
 let gif1 = document.getElementById('gif1');
 let gif2 = document.getElementById('gif2');
@@ -310,12 +337,20 @@ async function nextButton() {
     
     // Step 5인 경우 데이터 저장 후 완료 모달 표시
     if (currentStep === 5) {
-        // 데이터 저장
-        await saveInquiry();
-        
+        setStep5SubmitDisabled(true);
+        showLoadingOverlay('문의 내용을 전송 중입니다. 잠시만 기다려주세요...');
+
+        try {
+            // 데이터 저장
+            await saveInquiry();
+        } finally {
+            hideLoadingOverlay();
+            setStep5SubmitDisabled(false);
+        }
+
         // 완료 모달 표시
         showCompletionModal();
-        
+
         return true;
     }
     
