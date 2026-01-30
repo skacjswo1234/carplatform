@@ -2,7 +2,7 @@
 let currentStep = 1;
 const totalSteps = 5;
 
-function showLoadingOverlay(message = '잠시만 기다려주세요...') {
+function showLoadingOverlay(message = 'AI 견적 비교 중') {
     const overlay = document.getElementById('loadingOverlay');
     if (!overlay) return;
 
@@ -338,7 +338,7 @@ async function nextButton() {
     // Step 5인 경우 데이터 저장 후 완료 모달 표시
     if (currentStep === 5) {
         setStep5SubmitDisabled(true);
-        showLoadingOverlay('문의 내용을 전송 중입니다. 잠시만 기다려주세요...');
+        showLoadingOverlay('AI 견적 비교 중');
 
         try {
             // 데이터 저장
