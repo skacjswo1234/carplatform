@@ -653,13 +653,13 @@ function updateCountdown(element) {
     }
 }
 
-// 메인 사이트로 리다이렉트
+// 2차 페이지로 리다이렉트 (carplatform-ver2/index.html)
 function redirectToMainSite() {
     if (redirectTimer) {
         clearInterval(redirectTimer);
         redirectTimer = null;
     }
     
-    // 새 창에서 열기 또는 현재 창에서 이동
-    window.location.href = 'https://carplatform1.cafe24.com/';
+    // carplatform-ver2 폴더의 index.html로 이동
+    window.location.href = '/carplatform-ver2/index.html';
 }
