@@ -176,14 +176,25 @@ function initMobileMenu() {
     const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
     const navMobile = document.querySelector('.nav-mobile');
     const navMobileLinks = document.querySelectorAll('.nav-mobile a');
+    const mobileMenuClose = document.querySelector('.mobile-menu-close');
     
     if (!mobileMenuToggle || !navMobile) return;
     
+    // 메뉴 열기
     mobileMenuToggle.addEventListener('click', () => {
-        navMobile.classList.toggle('active');
-        mobileMenuToggle.classList.toggle('active');
+        navMobile.classList.add('active');
+        mobileMenuToggle.classList.add('active');
     });
     
+    // 메뉴 닫기 (X 버튼)
+    if (mobileMenuClose) {
+        mobileMenuClose.addEventListener('click', () => {
+            navMobile.classList.remove('active');
+            mobileMenuToggle.classList.remove('active');
+        });
+    }
+    
+    // 메뉴 링크 클릭 시 닫기
     navMobileLinks.forEach(link => {
         link.addEventListener('click', () => {
             navMobile.classList.remove('active');
@@ -358,12 +369,39 @@ function initPopularSection() {
 }
 
 // 고객후기 섹션 초기화
-function initReviewSection() {
+async function initReviewSection() {
     const reviewGrid = document.getElementById('reviewGrid');
     if (!reviewGrid) return;
     
-    // 고객후기 공간 준비
-    reviewGrid.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">고객후기를 준비중입니다.</p>';
+    try {
+        // API에서 활성화된 고객후기만 불러오기
+        const response = await fetch('/api/reviews?active=true');
+        const data = await response.json();
+
+        if (data.success && data.reviews && data.reviews.length > 0) {
+            renderReviews(data.reviews);
+        } else {
+            reviewGrid.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">고객후기를 준비중입니다.</p>';
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        reviewGrid.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">고객후기를 불러오는데 실패했습니다.</p>';
+    }
+}
+
+// 고객후기 렌더링
+function renderReviews(reviews) {
+    const reviewGrid = document.getElementById('reviewGrid');
+    if (!reviewGrid) return;
+
+    reviewGrid.innerHTML = reviews.map(review => `
+        <div class="review-card">
+            <div class="review-image">
+                <img src="${review.image_url}" alt="고객후기" onerror="this.style.display='none'">
+            </div>
+            ${review.text_content ? `<div class="review-text">${review.text_content}</div>` : ''}
+        </div>
+    `).join('');
 }
 
 // 전화번호 입력란 숫자만 허용

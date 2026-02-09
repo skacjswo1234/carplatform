@@ -28,6 +28,7 @@
         </div>
         <!-- 모바일 메뉴 -->
         <nav class="nav-mobile">
+            <button class="mobile-menu-close" aria-label="메뉴 닫기">×</button>
             <div class="mobile-menu-logo">
                 <img src="images/logo.png" alt="카플랫폼 로고">
             </div>
@@ -73,10 +74,10 @@
             </div>
             <div class="h-2-videos">
                 <div class="h-2-video">
-                    <video src="images/h-2/h-2-v1.mp4" controls></video>
+                    <video src="images/h-2/h-2-v1.mp4" controls autoplay muted playsinline loop></video>
                 </div>
                 <div class="h-2-video">
-                    <video src="images/h-2/h-2-v2.mp4" controls></video>
+                    <video src="images/h-2/h-2-v2.mp4" controls autoplay muted playsinline loop></video>
                 </div>
             </div>
         </div>
@@ -316,6 +317,12 @@
         <a href="#" class="kakao-float" id="kakaoBtn">
             <img src="images/kakao-img.png" alt="카카오톡 상담">
         </a>
+        <!-- Top 버튼 (PC용 - 카카오톡 아래) -->
+        <button class="top-btn" id="topBtn" aria-label="맨 위로">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4L4 12H8V20H16V12H20L12 4Z" fill="currentColor"/>
+            </svg>
+        </button>
         <!-- 모바일 고정 띠지 -->
         <div class="mobile-fixed-bar">
             <a href="#consultation" class="mobile-consult-btn">
@@ -325,12 +332,6 @@
                 <img src="images/kakao-img.png" alt="카카오톡 상담">
             </a>
         </div>
-        <!-- Top 버튼 (PC/모바일 공통) -->
-        <button class="top-btn" id="topBtn" aria-label="맨 위로">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 4L4 12H8V20H16V12H20L12 4Z" fill="currentColor"/>
-            </svg>
-        </button>
     </footer>
 
     <!-- 모달 -->

@@ -23,6 +23,7 @@
         </div>
         <ul class="nav-menu">
             <li><a href="#" class="nav-item active" data-page="inquiries">문의 리스트</a></li>
+            <li><a href="#" class="nav-item" data-page="reviews">고객후기 관리</a></li>
             <li><a href="#" class="nav-item" data-page="password">비밀번호 변경</a></li>
             <li><a href="#" class="nav-item" onclick="logout(); return false;">로그아웃</a></li>
         </ul>
@@ -78,6 +79,19 @@
             </div>
         </div>
 
+        <!-- 고객후기 관리 페이지 -->
+        <div class="page-content" id="reviewsPage">
+            <div class="reviews-management">
+                <div class="reviews-header">
+                    <button class="btn-primary" id="addReviewBtn">고객후기 추가</button>
+                </div>
+                
+                <div class="reviews-list" id="reviewsList">
+                    <div class="loading">데이터를 불러오는 중...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- 비밀번호 변경 페이지 -->
         <div class="page-content" id="passwordPage">
             <div class="password-change-container">
@@ -101,6 +115,46 @@
             </div>
         </div>
     </main>
+
+    <!-- 고객후기 추가/수정 모달 -->
+    <div class="modal" id="reviewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="reviewModalTitle">고객후기 추가</h3>
+                <button class="modal-close" id="closeReviewModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm" class="review-form">
+                    <div class="form-group">
+                        <label for="reviewImage">이미지</label>
+                        <input type="file" id="reviewImage" accept="image/*" required>
+                        <div class="image-preview" id="imagePreview"></div>
+                        <small>이미지 파일을 선택하세요 (최대 2MB 권장)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="reviewText">후기 텍스트</label>
+                        <textarea id="reviewText" rows="4" placeholder="고객후기 텍스트를 입력하세요"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="reviewOrder">표시 순서</label>
+                        <input type="number" id="reviewOrder" value="0" min="0">
+                        <small>숫자가 작을수록 먼저 표시됩니다</small>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="reviewActive" checked>
+                            활성화 (표시 여부)
+                        </label>
+                    </div>
+                    <input type="hidden" id="reviewId">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelReviewBtn">취소</button>
+                <button class="btn-primary" id="saveReviewBtn">저장</button>
+            </div>
+        </div>
+    </div>
 
     <!-- 상세 정보 모달 -->
     <div class="modal" id="detailModal">

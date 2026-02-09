@@ -744,3 +744,175 @@ body {
     }
 
 }
+
+/* 고객후기 관리 스타일 */
+.reviews-management {
+    padding: 20px;
+}
+
+.reviews-header {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.review-item {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    align-items: center;
+}
+
+.review-item .review-image {
+    flex-shrink: 0;
+    width: 150px;
+    height: 150px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.review-item .review-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.review-item .review-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.review-item .review-text {
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.review-item .review-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.review-item .review-meta .status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.review-item .review-meta .status.active {
+    background: var(--success);
+    color: white;
+}
+
+.review-item .review-meta .status.inactive {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.review-item .review-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
+}
+
+.btn-small.btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-small.btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+.btn-small.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-small.btn-danger:hover {
+    background: #d32f2f;
+}
+
+.review-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.review-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.review-form label {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.review-form input[type="file"],
+.review-form input[type="number"],
+.review-form textarea {
+    padding: 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: inherit;
+}
+
+.review-form textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.review-form small {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.image-preview {
+    margin-top: 10px;
+    padding: 10px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.image-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+}
+
+.review-form input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}

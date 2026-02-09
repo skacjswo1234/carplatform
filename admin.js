@@ -92,6 +92,51 @@ function initEventListeners() {
             closeModal();
         }
     });
+
+    // 고객후기 관리 이벤트
+    const addReviewBtn = document.getElementById('addReviewBtn');
+    if (addReviewBtn) {
+        addReviewBtn.addEventListener('click', function() {
+            openReviewModal();
+        });
+    }
+
+    const saveReviewBtn = document.getElementById('saveReviewBtn');
+    if (saveReviewBtn) {
+        saveReviewBtn.addEventListener('click', function() {
+            saveReview();
+        });
+    }
+
+    const cancelReviewBtn = document.getElementById('cancelReviewBtn');
+    if (cancelReviewBtn) {
+        cancelReviewBtn.addEventListener('click', function() {
+            closeReviewModal();
+        });
+    }
+
+    const closeReviewModalBtn = document.getElementById('closeReviewModal');
+    if (closeReviewModalBtn) {
+        closeReviewModalBtn.addEventListener('click', function() {
+            closeReviewModal();
+        });
+    }
+
+    const reviewModal = document.getElementById('reviewModal');
+    if (reviewModal) {
+        reviewModal.addEventListener('click', function(e) {
+            if (e.target === reviewModal) {
+                closeReviewModal();
+            }
+        });
+    }
+
+    const reviewImageInput = document.getElementById('reviewImage');
+    if (reviewImageInput) {
+        reviewImageInput.addEventListener('change', function(e) {
+            previewImage(e.target.files[0]);
+        });
+    }
 }
 
 // 페이지 전환
@@ -117,9 +162,15 @@ function switchPage(page) {
     // 페이지 제목 업데이트
     const titles = {
         'inquiries': '문의 리스트',
+        'reviews': '고객후기 관리',
         'password': '비밀번호 변경'
     };
     document.getElementById('pageTitle').textContent = titles[page] || '';
+
+    // 페이지별 초기화
+    if (page === 'reviews') {
+        loadReviews();
+    }
 }
 
 // 문의 목록 불러오기
@@ -524,4 +575,269 @@ function getNextStatusText(currentStatus) {
 
 function showError(message) {
     alert(message);
+}
+
+// ========== 고객후기 관리 기능 ==========
+
+// 고객후기 목록 불러오기
+async function loadReviews() {
+    const reviewsList = document.getElementById('reviewsList');
+    if (!reviewsList) return;
+
+    try {
+        reviewsList.innerHTML = '<div class="loading">데이터를 불러오는 중...</div>';
+        
+        const response = await fetch(`${API_BASE_URL}/reviews`);
+        const data = await response.json();
+
+        if (data.success && data.reviews) {
+            renderReviews(data.reviews);
+        } else {
+            reviewsList.innerHTML = '<div class="error">데이터를 불러오는데 실패했습니다.</div>';
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        reviewsList.innerHTML = '<div class="error">데이터를 불러오는데 실패했습니다.</div>';
+    }
+}
+
+// 고객후기 목록 렌더링
+function renderReviews(reviews) {
+    const reviewsList = document.getElementById('reviewsList');
+    if (!reviewsList) return;
+
+    if (reviews.length === 0) {
+        reviewsList.innerHTML = '<div class="empty">등록된 고객후기가 없습니다.</div>';
+        return;
+    }
+
+    reviewsList.innerHTML = reviews.map(review => `
+        <div class="review-item" data-id="${review.id}">
+            <div class="review-image">
+                <img src="${review.image_url}" alt="고객후기 이미지" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E이미지 없음%3C/text%3E%3C/svg%3E'">
+            </div>
+            <div class="review-content">
+                <div class="review-text">${review.text_content || '(텍스트 없음)'}</div>
+                <div class="review-meta">
+                    <span>순서: ${review.display_order}</span>
+                    <span class="status ${review.is_active ? 'active' : 'inactive'}">${review.is_active ? '활성' : '비활성'}</span>
+                </div>
+            </div>
+            <div class="review-actions">
+                <button class="btn-small btn-primary" onclick="editReview(${review.id})">수정</button>
+                <button class="btn-small btn-danger" onclick="deleteReview(${review.id})">삭제</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 고객후기 모달 열기
+function openReviewModal(reviewId = null) {
+    const modal = document.getElementById('reviewModal');
+    const form = document.getElementById('reviewForm');
+    const modalTitle = document.getElementById('reviewModalTitle');
+    const imagePreview = document.getElementById('imagePreview');
+    
+    if (!modal || !form) return;
+
+    if (reviewId) {
+        modalTitle.textContent = '고객후기 수정';
+        document.getElementById('reviewId').value = reviewId;
+        // 기존 데이터 불러오기
+        loadReviewData(reviewId);
+    } else {
+        modalTitle.textContent = '고객후기 추가';
+        form.reset();
+        document.getElementById('reviewId').value = '';
+        imagePreview.innerHTML = '';
+    }
+
+    modal.classList.add('active');
+}
+
+// 고객후기 데이터 불러오기
+async function loadReviewData(reviewId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/reviews`);
+        const data = await response.json();
+
+        if (data.success && data.reviews) {
+            const review = data.reviews.find(r => r.id === reviewId);
+            if (review) {
+                document.getElementById('reviewText').value = review.text_content || '';
+                document.getElementById('reviewOrder').value = review.display_order || 0;
+                document.getElementById('reviewActive').checked = review.is_active === 1;
+                
+                const imagePreview = document.getElementById('imagePreview');
+                imagePreview.innerHTML = `<img src="${review.image_url}" alt="미리보기" style="max-width: 100%; max-height: 200px;">`;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading review data:', error);
+    }
+}
+
+// 이미지 미리보기
+function previewImage(file) {
+    const imagePreview = document.getElementById('imagePreview');
+    if (!imagePreview || !file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        imagePreview.innerHTML = `<img src="${e.target.result}" alt="미리보기" style="max-width: 100%; max-height: 200px;">`;
+    };
+    reader.readAsDataURL(file);
+}
+
+// 고객후기 저장
+async function saveReview() {
+    const form = document.getElementById('reviewForm');
+    const reviewId = document.getElementById('reviewId').value;
+    const imageInput = document.getElementById('reviewImage');
+    const textContent = document.getElementById('reviewText').value;
+    const displayOrder = parseInt(document.getElementById('reviewOrder').value) || 0;
+    const isActive = document.getElementById('reviewActive').checked;
+
+    // 이미지 처리
+    let imageUrl = '';
+    
+    if (imageInput.files && imageInput.files[0]) {
+        // 새 이미지가 선택된 경우 업로드
+        const file = imageInput.files[0];
+        
+        // 파일 크기 체크 (5MB 제한)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('이미지 크기는 5MB 이하여야 합니다.');
+            return;
+        }
+
+        // R2에 업로드 시도, 실패하면 Base64 사용
+        try {
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', file);
+            
+            const uploadResponse = await fetch(`${API_BASE_URL}/upload-image`, {
+                method: 'POST',
+                body: uploadFormData,
+            });
+
+            const uploadData = await uploadResponse.json();
+            
+            if (uploadData.success) {
+                imageUrl = uploadData.url;
+            } else {
+                // R2 업로드 실패 시 Base64로 폴백
+                console.warn('R2 업로드 실패, Base64 사용:', uploadData.error);
+                imageUrl = await fileToBase64(file);
+            }
+        } catch (error) {
+            // 업로드 API 오류 시 Base64로 폴백
+            console.warn('이미지 업로드 오류, Base64 사용:', error);
+            imageUrl = await fileToBase64(file);
+        }
+    } else if (reviewId) {
+        // 수정 모드이고 새 이미지가 없으면 기존 이미지 URL 가져오기
+        try {
+            const response = await fetch(`${API_BASE_URL}/reviews`);
+            const data = await response.json();
+            if (data.success && data.reviews) {
+                const review = data.reviews.find(r => r.id == reviewId);
+                if (review) {
+                    imageUrl = review.image_url;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading existing image:', error);
+        }
+    }
+
+    if (!imageUrl) {
+        alert('이미지를 선택해주세요.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id: reviewId || null,
+                image_url: imageUrl,
+                text_content: textContent,
+                display_order: displayOrder,
+                is_active: isActive
+            }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(reviewId ? '고객후기가 수정되었습니다.' : '고객후기가 추가되었습니다.');
+            closeReviewModal();
+            loadReviews();
+        } else {
+            alert('저장에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+        }
+    } catch (error) {
+        console.error('Error saving review:', error);
+        alert('저장 중 오류가 발생했습니다.');
+    }
+}
+
+// 파일을 Base64로 변환
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// 고객후기 수정
+function editReview(reviewId) {
+    openReviewModal(reviewId);
+}
+
+// 고객후기 삭제
+async function deleteReview(reviewId) {
+    if (!confirm('정말 삭제하시겠습니까?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/reviews?id=${reviewId}`, {
+            method: 'DELETE',
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('고객후기가 삭제되었습니다.');
+            loadReviews();
+        } else {
+            alert('삭제에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+        }
+    } catch (error) {
+        console.error('Error deleting review:', error);
+        alert('삭제 중 오류가 발생했습니다.');
+    }
+}
+
+// 고객후기 모달 닫기
+function closeReviewModal() {
+    const modal = document.getElementById('reviewModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    const form = document.getElementById('reviewForm');
+    if (form) {
+        form.reset();
+    }
+    const imagePreview = document.getElementById('imagePreview');
+    if (imagePreview) {
+        imagePreview.innerHTML = '';
+    }
 }

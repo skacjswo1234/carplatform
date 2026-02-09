@@ -40,3 +40,18 @@ CREATE TABLE IF NOT EXISTS inquiry_limits (
 -- IP 주소 인덱스 생성 (빠른 조회를 위해)
 CREATE INDEX IF NOT EXISTS idx_ip_address ON inquiry_limits(ip_address);
 CREATE INDEX IF NOT EXISTS idx_last_inquiry_at ON inquiry_limits(last_inquiry_at);
+
+-- 고객후기 테이블 생성
+CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    image_url TEXT NOT NULL,
+    text_content TEXT,
+    display_order INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 고객후기 표시 순서 인덱스
+CREATE INDEX IF NOT EXISTS idx_reviews_display_order ON reviews(display_order);
+CREATE INDEX IF NOT EXISTS idx_reviews_is_active ON reviews(is_active);
