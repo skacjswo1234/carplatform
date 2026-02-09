@@ -26,3 +26,17 @@ CREATE TABLE IF NOT EXISTS admin_password (
 -- 테이블이 비어있을 경우에만 삽입
 INSERT OR IGNORE INTO admin_password (id, password, updated_at) 
 VALUES (1, 'admin123', datetime('now', '+9 hours'));
+
+-- IP 기반 문의 제한 테이블 생성 (24시간 내 2회 제한)
+CREATE TABLE IF NOT EXISTS inquiry_limits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_address TEXT NOT NULL,
+    inquiry_count INTEGER DEFAULT 1,
+    first_inquiry_at DATETIME NOT NULL,
+    last_inquiry_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- IP 주소 인덱스 생성 (빠른 조회를 위해)
+CREATE INDEX IF NOT EXISTS idx_ip_address ON inquiry_limits(ip_address);
+CREATE INDEX IF NOT EXISTS idx_last_inquiry_at ON inquiry_limits(last_inquiry_at);

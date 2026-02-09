@@ -2,6 +2,45 @@
 let currentStep = 1;
 const totalSteps = 5;
 
+// SQL 인젝션 방지: SELECT, AND, SLEEP 키워드 및 특수문자 필터링
+function sanitizeInput(value) {
+    if (!value || typeof value !== 'string') return value;
+    
+    // SQL 인젝션 키워드 검사 (대소문자 무시)
+    const sqlKeywords = /\b(SELECT|AND|SLEEP|UNION|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|SCRIPT|SCRIPT>|SCRIPT<|SCRIPT\/|SCRIPT\\|SCRIPT\*|SCRIPT\?|SCRIPT\#|SCRIPT\!|SCRIPT\@|SCRIPT\$|SCRIPT\%|SCRIPT\^|SCRIPT\&|SCRIPT\*|SCRIPT\(|SCRIPT\)|SCRIPT\-|SCRIPT\_|SCRIPT\+|SCRIPT\=|SCRIPT\{|SCRIPT\}|SCRIPT\[|SCRIPT\]|SCRIPT\||SCRIPT\\|SCRIPT\:|SCRIPT\;|SCRIPT\"|SCRIPT\'|SCRIPT\<|SCRIPT\>|SCRIPT\,|SCRIPT\.|SCRIPT\?|SCRIPT\/|SCRIPT\~|SCRIPT\`)\b/gi;
+    
+    // 특수문자 검사 (SQL 인젝션에 사용되는 문자들)
+    const dangerousChars = /["'\\;<>]/g;
+    
+    if (sqlKeywords.test(value) || dangerousChars.test(value)) {
+        return null; // 위험한 입력 감지
+    }
+    
+    return value.trim();
+}
+
+// 전화번호 숫자만 허용 검증
+function validatePhoneInput(event) {
+    const input = event.target;
+    const value = input.value;
+    
+    // 숫자가 아닌 문자가 입력되면
+    if (event.key && !/[0-9]/.test(event.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault();
+        showAlertModal('숫자만 입력 가능합니다.');
+        return false;
+    }
+    
+    // 입력 후에도 숫자가 아닌 문자가 있으면 제거
+    const numericOnly = value.replace(/[^0-9]/g, '');
+    if (value !== numericOnly) {
+        input.value = numericOnly;
+        showAlertModal('숫자만 입력 가능합니다.');
+    }
+    
+    return true;
+}
+
 function showLoadingOverlay(message = 'AI 견적 비교 중') {
     const overlay = document.getElementById('loadingOverlay');
     if (!overlay) return;
@@ -145,6 +184,36 @@ document.addEventListener('DOMContentLoaded', function() {
         initImages();
     }, 100);
     
+    // 전화번호 입력란 숫자만 허용
+    const phoneInput = document.getElementById('user_phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            const value = e.target.value;
+            const numericOnly = value.replace(/[^0-9]/g, '');
+            if (value !== numericOnly) {
+                e.target.value = numericOnly;
+                showAlertModal('숫자만 입력 가능합니다.');
+            }
+        });
+        
+        phoneInput.addEventListener('keypress', function(e) {
+            if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+                e.preventDefault();
+                showAlertModal('숫자만 입력 가능합니다.');
+            }
+        });
+        
+        phoneInput.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const numericOnly = pastedText.replace(/[^0-9]/g, '');
+            if (pastedText !== numericOnly) {
+                showAlertModal('숫자만 입력 가능합니다.');
+            }
+            e.target.value = numericOnly;
+        });
+    }
+    
     // 개인정보 전문보기 클릭 이벤트
     const privacyBtn = document.querySelector('.pop-privacy');
     if (privacyBtn) {
@@ -242,6 +311,16 @@ function validateStep04() {
         carNameInput.focus();
         return false;
     }
+    
+    // SQL 인젝션 검증
+    const sanitized = sanitizeInput(carName);
+    if (sanitized === null) {
+        carNameInput.classList.add('error');
+        showAlertModal('입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.\n차량명을 다시 입력해주세요.');
+        carNameInput.focus();
+        return false;
+    }
+    
     return true;
 }
 
@@ -256,6 +335,15 @@ function validateStep05() {
     if (!userName) {
         userNameInput.classList.add('error');
         showAlertModal('성함을 입력해주세요.');
+        userNameInput.focus();
+        return false;
+    }
+    
+    // 이름 SQL 인젝션 검증
+    const sanitizedName = sanitizeInput(userName);
+    if (sanitizedName === null) {
+        userNameInput.classList.add('error');
+        showAlertModal('입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.\n성함을 다시 입력해주세요.');
         userNameInput.focus();
         return false;
     }
@@ -402,14 +490,70 @@ async function sendInquiryToAppsScript(formData) {
     });
 }
 
+// IP 주소 가져오기 (Cloudflare의 CF-Connecting-IP 헤더 사용)
+async function getClientIP() {
+    try {
+        // 백엔드에서 IP를 가져오는 엔드포인트 호출
+        const response = await fetch('/api/get-ip', {
+            method: 'GET',
+        });
+        if (response.ok) {
+            const data = await response.json();
+            return data.ip || 'unknown';
+        }
+    } catch (error) {
+        console.warn('IP 가져오기 실패:', error);
+    }
+    return 'unknown';
+}
+
 // 문의 데이터 저장
 async function saveInquiry() {
+    // IP 기반 제한 체크
+    const clientIP = await getClientIP();
+    
+    // IP 제한 체크
+    try {
+        const limitCheck = await fetch('/api/inquiries/check-limit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ip: clientIP }),
+        });
+        
+        if (limitCheck.ok) {
+            const limitResult = await limitCheck.json();
+            if (!limitResult.allowed) {
+                showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
+                hideLoadingOverlay();
+                setStep5SubmitDisabled(false);
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('제한 체크 오류:', error);
+        // 제한 체크 실패 시에도 진행 (서버에서 다시 체크)
+    }
+    
+    // 입력값 sanitization
+    const userName = sanitizeInput(document.getElementById('user_name').value.trim());
+    const carName = sanitizeInput(document.getElementById('user_car').value.trim());
+    
+    if (userName === null || carName === null) {
+        showAlertModal('입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.');
+        hideLoadingOverlay();
+        setStep5SubmitDisabled(false);
+        return;
+    }
+    
     const formData = {
-        name: document.getElementById('user_name').value.trim(),
+        name: userName,
         phone: document.getElementById('user_phone').value.replace(/[^0-9]/g, ''),
         affiliation: document.querySelector('input[name="wr_7"]:checked')?.value || null,
         vehicle_type: document.querySelector('input[name="wr_3"]:checked')?.value || null,
-        car_name: document.getElementById('user_car').value.trim() || null
+        car_name: carName || null,
+        ip: clientIP
     };
 
     try {
@@ -422,6 +566,13 @@ async function saveInquiry() {
         });
 
         if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
+                showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
+                hideLoadingOverlay();
+                setStep5SubmitDisabled(false);
+                return;
+            }
             throw new Error('데이터 저장에 실패했습니다.');
         }
 
