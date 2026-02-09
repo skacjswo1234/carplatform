@@ -374,6 +374,40 @@
         </div>
     </div>
 
+    <!-- Alert 모달 -->
+    <div class="alert-modal hidden" id="alertModal">
+        <div class="alert-modal-content">
+            <div class="alert-icon">⚠️</div>
+            <p class="alert-message" id="alertMessage"></p>
+            <button class="alert-confirm-btn" onclick="closeAlertModal()">확인</button>
+        </div>
+    </div>
+
+    <!-- 완료 모달 -->
+    <div class="completion-modal hidden" id="completionModal">
+        <div class="completion-modal-content">
+            <div class="completion-icon">✓</div>
+            <h2 class="completion-title">신청이 완료되었습니다!</h2>
+            <p class="completion-message">
+                <strong>상담 신청</strong>이 완료되었습니다.<br>
+                제공해주신 정보를 통하여<br>
+                상담원이 신속하게 안내드릴 수 있도록 하겠습니다.
+            </p>
+            <button class="completion-btn" onclick="closeCompletionModal()">확인</button>
+        </div>
+    </div>
+
+    <!-- 로딩 오버레이 (문의 접수 중) -->
+    <div class="loading-overlay hidden" id="loadingOverlay" role="status" aria-live="polite" aria-busy="true">
+        <div class="loading-box">
+            <div class="loading-title">문의 접수 중입니다</div>
+            <div class="loading-bar" aria-hidden="true">
+                <div class="loading-bar-fill"></div>
+            </div>
+            <div class="loading-sub" id="loadingText">처리 중...</div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

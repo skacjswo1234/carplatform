@@ -83,10 +83,26 @@
         <div class="page-content" id="reviewsPage">
             <div class="reviews-management">
                 <div class="reviews-header">
-                    <button class="btn-primary" id="addReviewBtn">고객후기 추가</button>
+                    <div class="reviews-stats">
+                        <span class="stat-item">
+                            <span class="stat-label">전체</span>
+                            <span class="stat-value" id="totalReviews">0</span>
+                        </span>
+                        <span class="stat-item">
+                            <span class="stat-label">활성</span>
+                            <span class="stat-value active" id="activeReviews">0</span>
+                        </span>
+                        <span class="stat-item">
+                            <span class="stat-label">비활성</span>
+                            <span class="stat-value inactive" id="inactiveReviews">0</span>
+                        </span>
+                    </div>
+                    <button class="btn-primary" id="addReviewBtn">
+                        <span>+</span> 고객후기 추가
+                    </button>
                 </div>
                 
-                <div class="reviews-list" id="reviewsList">
+                <div class="reviews-grid" id="reviewsList">
                     <div class="loading">데이터를 불러오는 중...</div>
                 </div>
             </div>
@@ -126,25 +142,49 @@
             <div class="modal-body">
                 <form id="reviewForm" class="review-form">
                     <div class="form-group">
-                        <label for="reviewImage">이미지</label>
-                        <input type="file" id="reviewImage" accept="image/*" required>
-                        <div class="image-preview" id="imagePreview"></div>
-                        <small>이미지 파일을 선택하세요 (최대 2MB 권장)</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="reviewText">후기 텍스트</label>
-                        <textarea id="reviewText" rows="4" placeholder="고객후기 텍스트를 입력하세요"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="reviewOrder">표시 순서</label>
-                        <input type="number" id="reviewOrder" value="0" min="0">
-                        <small>숫자가 작을수록 먼저 표시됩니다</small>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="reviewActive" checked>
-                            활성화 (표시 여부)
+                        <label for="reviewImage">
+                            <span>이미지 업로드</span>
+                            <span class="required-badge">필수</span>
                         </label>
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <input type="file" id="reviewImage" accept="image/*" required>
+                            <div class="upload-placeholder">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p>이미지를 드래그하거나 클릭하여 선택</p>
+                                <small>PNG, JPG, GIF (최대 5MB)</small>
+                            </div>
+                        </div>
+                        <div class="image-preview" id="imagePreview"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reviewText">
+                            <span>후기 텍스트</span>
+                            <span class="optional-badge">선택</span>
+                        </label>
+                        <textarea id="reviewText" rows="4" placeholder="고객후기 텍스트를 입력하세요 (선택사항)"></textarea>
+                        <small>텍스트를 입력하지 않으면 이미지만 표시됩니다</small>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reviewOrder">표시 순서</label>
+                            <input type="number" id="reviewOrder" value="0" min="0">
+                            <small>숫자가 작을수록 먼저 표시</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="reviewActive">상태</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="reviewActive" checked>
+                                <label for="reviewActive" class="toggle-label">
+                                    <span class="toggle-slider"></span>
+                                    <span class="toggle-text">활성화</span>
+                                </label>
+                            </div>
+                            <small>비활성화 시 사이트에 표시되지 않습니다</small>
+                        </div>
                     </div>
                     <input type="hidden" id="reviewId">
                 </form>

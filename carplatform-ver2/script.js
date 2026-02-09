@@ -31,9 +31,66 @@ async function getClientIP() {
     return 'unknown';
 }
 
-// 알림 표시 함수
+// 로딩 오버레이 표시/숨김
+function showLoadingOverlay(message = '처리 중...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const textEl = document.getElementById('loadingText');
+    if (overlay) {
+        if (textEl) textEl.textContent = message;
+        overlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Alert 모달 표시/숨김
+function showAlertModal(message) {
+    const modal = document.getElementById('alertModal');
+    const messageElement = document.getElementById('alertMessage');
+    if (messageElement) {
+        messageElement.textContent = message;
+    }
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeAlertModal() {
+    const modal = document.getElementById('alertModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// 완료 모달 표시/숨김
+function showCompletionModal() {
+    const modal = document.getElementById('completionModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeCompletionModal() {
+    const modal = document.getElementById('completionModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// 알림 표시 함수 (기존 호환성 유지)
 function showAlert(message) {
-    alert(message);
+    showAlertModal(message);
 }
 
 // 문의 데이터 저장
@@ -54,7 +111,7 @@ async function saveInquiry(name, phone, carName) {
         if (limitCheck.ok) {
             const limitResult = await limitCheck.json();
             if (!limitResult.allowed) {
-                showAlert('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
+                showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
                 return false;
             }
         }
@@ -68,14 +125,14 @@ async function saveInquiry(name, phone, carName) {
     const sanitizedCarName = sanitizeInput(carName);
     
     if (sanitizedName === null || sanitizedCarName === null) {
-        showAlert('입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.\n다시 입력해주세요.');
+        showAlertModal('입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.\n다시 입력해주세요.');
         return false;
     }
     
     // 전화번호 숫자만 허용 검증
     const phoneNumber = phone.replace(/[^0-9]/g, '');
     if (!/^[0-9]{10,11}$/.test(phoneNumber)) {
-        showAlert('올바른 연락처를 입력해주세요.\n(숫자만 입력, 10-11자리)');
+        showAlertModal('올바른 연락처를 입력해주세요.\n(숫자만 입력, 10-11자리)');
         return false;
     }
     
@@ -100,7 +157,7 @@ async function saveInquiry(name, phone, carName) {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
-                showAlert('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
+                showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
                 return false;
             }
             throw new Error('데이터 저장에 실패했습니다.');
@@ -113,7 +170,7 @@ async function saveInquiry(name, phone, carName) {
         return false;
     } catch (error) {
         console.error('Error saving inquiry:', error);
-        showAlert('문의 접수 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        showAlertModal('문의 접수 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         return false;
     }
 }
@@ -132,6 +189,26 @@ document.addEventListener('DOMContentLoaded', function() {
     initTopButton();
     initMobileConsultBtn();
     initPhoneInputs();
+    
+    // Alert 모달 외부 클릭 시 닫기
+    const alertModal = document.getElementById('alertModal');
+    if (alertModal) {
+        alertModal.addEventListener('click', function(e) {
+            if (e.target === alertModal) {
+                closeAlertModal();
+            }
+        });
+    }
+    
+    // 완료 모달 외부 클릭 시 닫기
+    const completionModal = document.getElementById('completionModal');
+    if (completionModal) {
+        completionModal.addEventListener('click', function(e) {
+            if (e.target === completionModal) {
+                closeCompletionModal();
+            }
+        });
+    }
 });
 
 // 슬라이더 기능
@@ -412,14 +489,14 @@ function initPhoneInputs() {
             const numericOnly = value.replace(/[^0-9]/g, '');
             if (value !== numericOnly) {
                 e.target.value = numericOnly;
-                showAlert('숫자만 입력 가능합니다.');
+                showAlertModal('숫자만 입력 가능합니다.');
             }
         });
         
         input.addEventListener('keypress', function(e) {
             if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
                 e.preventDefault();
-                showAlert('숫자만 입력 가능합니다.');
+                showAlertModal('숫자만 입력 가능합니다.');
             }
         });
         
@@ -428,7 +505,7 @@ function initPhoneInputs() {
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
             const numericOnly = pastedText.replace(/[^0-9]/g, '');
             if (pastedText !== numericOnly) {
-                showAlert('숫자만 입력 가능합니다.');
+                showAlertModal('숫자만 입력 가능합니다.');
             }
             e.target.value = numericOnly;
         });
@@ -483,24 +560,22 @@ function initForms() {
             // 버튼 비활성화
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
-                // 원래 내용 저장 (이미지 버튼인 경우)
-                if (submitBtn.querySelector('img') && !submitBtn.getAttribute('data-original')) {
-                    submitBtn.setAttribute('data-original', submitBtn.innerHTML);
-                }
                 submitBtn.disabled = true;
-                if (submitBtn.classList.contains('h-9-btn')) {
-                    submitBtn.innerHTML = '처리 중...';
-                } else {
-                    submitBtn.textContent = '처리 중...';
-                }
             }
+            
+            // 로딩 오버레이 표시
+            showLoadingOverlay('문의 접수 중입니다');
             
             // 문의 저장
             const success = await saveInquiry(name, phone, carName);
             
+            // 로딩 오버레이 숨김
+            hideLoadingOverlay();
+            
             if (success) {
-                showAlert('상담 신청이 완료되었습니다.\n빠른 시일 내에 연락드리겠습니다.');
                 form.reset();
+                // 완료 모달 표시
+                showCompletionModal();
             }
             
             // 버튼 활성화
@@ -620,15 +695,21 @@ function initMiniConsultation() {
             const submitBtn = miniForm.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.textContent = '처리 중...';
             }
+            
+            // 로딩 오버레이 표시
+            showLoadingOverlay('문의 접수 중입니다');
             
             // 문의 저장
             const success = await saveInquiry(name, phone, carName);
             
+            // 로딩 오버레이 숨김
+            hideLoadingOverlay();
+            
             if (success) {
-                showAlert('상담 신청이 완료되었습니다.\n빠른 시일 내에 연락드리겠습니다.');
                 miniForm.reset();
+                // 완료 모달 표시
+                showCompletionModal();
             }
             
             // 버튼 활성화
