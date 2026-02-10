@@ -181,10 +181,12 @@ body {
     z-index: 999;
     opacity: 0;
     transition: opacity 0.3s ease;
+    pointer-events: none; /* 닫혀 있을 때 메인 영역 클릭 가능 */
 }
 
 .mobile-overlay.active {
     opacity: 1;
+    pointer-events: auto; /* 열렸을 때만 오버레이 클릭으로 메뉴 닫기 */
 }
 
 /* 메인 콘텐츠 */
