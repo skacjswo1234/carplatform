@@ -7,8 +7,7 @@ binding = "carplatform-db"
 database_name = "carplatform-db"
 database_id = "459f61d7-bf8b-4b0a-8cc2-505ece4fb8b3"
 
-# R2 버킷 설정 (고객후기 이미지 저장용)
+# R2 버킷 (고객후기 이미지) - carplatform-bucket 만 사용
 [[r2_buckets]]
 binding = "REVIEWS_BUCKET"
-bucket_name = "carplatform-reviews"
-# 주의: 실제 배포 전에 Cloudflare 대시보드에서 버킷을 먼저 생성해야 합니다
+bucket_name = "carplatform-bucket"

@@ -5,14 +5,16 @@
 1. Cloudflare 대시보드 접속
 2. 왼쪽 메뉴에서 **R2** 클릭
 3. **Create bucket** 버튼 클릭
-4. 버킷 이름: `carplatform-reviews` (정확히 이 이름으로 생성)
+4. 버킷 이름: `carplatform-bucket` (현재 프로젝트에서 사용 중)
 5. **Create bucket** 클릭
 
-## 2. R2 Public URL 설정
+## 2. R2 Public URL 설정 (필수 – 이미지 노출용)
+
+고객후기 이미지가 사이트에 보이려면 **Public Access를 켜야** 합니다.
 
 ### 방법 A: R2 Public URL 사용 (간단)
 
-1. 생성한 버킷(`carplatform-reviews`) 클릭
+1. 생성한 버킷(`carplatform-bucket`) 클릭
 2. **Settings** 탭 클릭
 3. **Public access** 섹션에서 **Allow Access** 활성화
 4. **Public URL** 확인 (예: `https://pub-xxxxx.r2.dev`)
@@ -40,7 +42,7 @@ Cloudflare Pages에서 환경변수로 R2 Public URL 설정:
 
 R2 버킷 생성 후 알려주실 정보:
 
-- [ ] 버킷 이름: `carplatform-reviews` (생성 완료)
+- [ ] 버킷 이름: `carplatform-bucket` (생성 완료)
 - [ ] R2 Public URL: `https://pub-xxxxx.r2.dev` (있다면)
 - [ ] Custom Domain: `https://r2.yourdomain.com` (있다면)
 
