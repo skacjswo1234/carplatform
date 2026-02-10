@@ -879,8 +879,8 @@ body {
 /* h-10 섹션 (고객후기) */
 .h-10-section {
     position: relative;
-    padding: 80px 0;
-    min-height: 500px;
+    padding: 90px 0 100px;
+    min-height: 560px;
 }
 
 .h-10-bg {
@@ -896,9 +896,13 @@ body {
     z-index: -1;
 }
 
-.h-10-title {
+.h-10-header {
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: 48px;
+}
+
+.h-10-title {
+    margin-bottom: 12px;
 }
 
 .h-10-title img {
@@ -906,14 +910,22 @@ body {
     height: auto;
 }
 
-.review-container {
-    min-height: 300px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 30px;
-    margin-bottom: 40px;
-    position: relative;
-    z-index: 2;
+.h-10-subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 0.08em;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.h-10-emoji {
+    display: inline-block;
+    font-style: normal;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
 .h-10-section .container {
@@ -921,36 +933,71 @@ body {
     z-index: 1;
 }
 
+.review-container {
+    min-height: 320px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 28px;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 2;
+}
+
+/* 고객후기 카드 – 트렌디 스타일 */
 .review-card {
-    background: white;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s;
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .review-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+}
+
+.review-card .review-image {
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #f5f5f5;
 }
 
 .review-card img {
     width: 100%;
-    height: 200px;
+    height: 240px;
     object-fit: cover;
+    display: block;
 }
 
 .review-card .review-text {
-    padding: 15px;
-    color: #333;
-    font-size: 14px;
-    line-height: 1.6;
+    padding: 22px 24px 26px;
+    color: #2c2c2c;
+    font-size: 15px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    flex: 1;
+    min-height: 0;
+    display: block;
 }
 
 .review-text {
-    padding: 20px;
-    color: #333;
-    font-size: 14px;
-    line-height: 1.6;
+    padding: 22px 24px 26px;
+    color: #2c2c2c;
+    font-size: 15px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* h-11 섹션 */
@@ -1397,7 +1444,16 @@ body {
 
     .review-container {
         grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
+        gap: 24px;
+    }
+
+    .review-card img {
+        height: 200px;
+    }
+
+    .review-card .review-text {
+        padding: 18px 20px 22px;
+        font-size: 14px;
     }
 
     .footer-content {
@@ -1467,6 +1523,22 @@ body {
 
     .review-container {
         grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .review-card img {
+        height: 220px;
+    }
+
+    .review-card .review-text,
+    .review-text {
+        padding: 18px 20px 22px;
+        font-size: 14px;
+        line-height: 1.65;
+    }
+
+    .h-10-subtitle {
+        font-size: 0.9rem;
     }
 
     .slider-btn {
