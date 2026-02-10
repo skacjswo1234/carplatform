@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS admin_password (
 INSERT OR IGNORE INTO admin_password (id, password, updated_at) 
 VALUES (1, 'admin123', datetime('now', '+9 hours'));
 
--- IP 기반 문의 제한 테이블 생성 (24시간 내 2회 제한)
+-- IP 기반 문의 제한 테이블 생성 (한 IP당 24시간 내 1회 제한)
 CREATE TABLE IF NOT EXISTS inquiry_limits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ip_address TEXT NOT NULL,

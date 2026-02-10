@@ -423,20 +423,26 @@ async function nextButton() {
         return false;
     }
     
-    // Step 5인 경우 데이터 저장 후 완료 모달 표시
+    // Step 5인 경우: 먼저 IP/입력값 체크 및 저장 시도 후, 성공한 경우에만 완료 모달 표시
     if (currentStep === 5) {
         setStep5SubmitDisabled(true);
         showLoadingOverlay('AI 견적 비교 중');
 
+        let success = false;
         try {
-            // 데이터 저장
-            await saveInquiry();
+            // 데이터 저장 (IP 제한 포함)
+            success = await saveInquiry();
         } finally {
             hideLoadingOverlay();
             setStep5SubmitDisabled(false);
         }
 
-        // 완료 모달 표시
+        // IP 제한 또는 입력값 문제로 실패한 경우: 완료 모달 띄우지 않음
+        if (!success) {
+            return false;
+        }
+
+        // 정상적으로 저장된 경우에만 완료 모달 표시
         showCompletionModal();
 
         return true;
@@ -525,10 +531,9 @@ async function saveInquiry() {
         if (limitCheck.ok) {
             const limitResult = await limitCheck.json();
             if (!limitResult.allowed) {
+                // 24시간 내 이미 문의한 IP인 경우: 완료 모달 대신 안내 모달만 표시
                 showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
-                hideLoadingOverlay();
-                setStep5SubmitDisabled(false);
-                return;
+                return false;
             }
         }
     } catch (error) {
@@ -542,9 +547,7 @@ async function saveInquiry() {
     
     if (userName === null || carName === null) {
         showAlertModal('입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.');
-        hideLoadingOverlay();
-        setStep5SubmitDisabled(false);
-        return;
+        return false;
     }
     
     const formData = {
@@ -568,21 +571,20 @@ async function saveInquiry() {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
+                // 서버 측 IP 제한에 걸린 경우
                 showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
-                hideLoadingOverlay();
-                setStep5SubmitDisabled(false);
-                return;
+                return false;
             }
             throw new Error('데이터 저장에 실패했습니다.');
         }
-
+        
         const result = await response.json();
         if (result.success) {
             console.log('문의가 성공적으로 저장되었습니다.');
         }
     } catch (error) {
         console.error('Error saving inquiry:', error);
-        // 저장 실패해도 완료 페이지는 보여줌
+        // 저장 실패해도 완료 페이지는 보여줌 (IP 제한과 무관한 에러)
     }
 
     // Apps Script로 전송 (메일 + 시트 기록)
@@ -591,6 +593,9 @@ async function saveInquiry() {
     } catch (error) {
         console.warn('Apps Script 전송 오류:', error);
     }
+
+    // 여기까지 왔으면 IP 제한에는 안 걸린 것으로 간주
+    return true;
 }
 
 // 개인정보처리방침 모달

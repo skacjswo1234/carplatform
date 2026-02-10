@@ -47,7 +47,7 @@ function getKSTDateTime() {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-// IP 기반 제한 체크 (24시간 내 2회 제한)
+// IP 기반 제한 체크 (한 IP당 24시간 내 1회 제한)
 async function checkIPLimit(db, ipAddress) {
   try {
     // 24시간 이전의 레코드는 무시
@@ -67,8 +67,8 @@ async function checkIPLimit(db, ipAddress) {
       return { allowed: true, count: 0 };
     }
     
-    // 24시간 내 문의 횟수 확인
-    if (limitRecord.inquiry_count >= 2) {
+    // 24시간 내 문의 횟수 확인 (1회 이상이면 제한)
+    if (limitRecord.inquiry_count >= 1) {
       // 마지막 문의 시간 계산
       const lastInquiry = new Date(limitRecord.last_inquiry_at);
       const now = new Date();
