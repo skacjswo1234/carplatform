@@ -196,6 +196,34 @@
         </div>
     </div>
 
+    <!-- 알림 모달 (성공/오류/안내) -->
+    <div class="modal message-modal" id="messageModal">
+        <div class="modal-content message-modal-content">
+            <div class="message-modal-icon" id="messageModalIcon"></div>
+            <p class="message-modal-text" id="messageModalText"></p>
+            <button type="button" class="btn-primary message-modal-btn" id="messageModalBtn">확인</button>
+        </div>
+    </div>
+
+    <!-- 확인 모달 (삭제 등 확인용) -->
+    <div class="modal confirm-modal" id="confirmModal">
+        <div class="modal-content confirm-modal-content">
+            <div class="confirm-modal-icon" id="confirmModalIcon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <h3 class="confirm-modal-title" id="confirmModalTitle">확인</h3>
+            <p class="confirm-modal-text" id="confirmModalText"></p>
+            <div class="confirm-modal-actions">
+                <button type="button" class="btn-secondary" id="confirmModalCancel">취소</button>
+                <button type="button" class="btn-primary btn-danger" id="confirmModalConfirm">확인</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 상세 정보 모달 -->
     <div class="modal" id="detailModal">
         <div class="modal-content">

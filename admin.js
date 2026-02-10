@@ -93,6 +93,42 @@ function initEventListeners() {
         }
     });
 
+    // 알림 모달
+    const messageModal = document.getElementById('messageModal');
+    const messageModalBtn = document.getElementById('messageModalBtn');
+    if (messageModalBtn) {
+        messageModalBtn.addEventListener('click', function() {
+            messageModal.classList.remove('active');
+        });
+    }
+    if (messageModal) {
+        messageModal.addEventListener('click', function(e) {
+            if (e.target === messageModal) messageModal.classList.remove('active');
+        });
+    }
+
+    // 확인 모달
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmModalCancel = document.getElementById('confirmModalCancel');
+    const confirmModalConfirm = document.getElementById('confirmModalConfirm');
+    if (confirmModalCancel) {
+        confirmModalCancel.addEventListener('click', function() {
+            confirmModal.classList.remove('active');
+        });
+    }
+    if (confirmModalConfirm) {
+        confirmModalConfirm.addEventListener('click', function() {
+            if (typeof _confirmModalOnConfirm === 'function') _confirmModalOnConfirm();
+            _confirmModalOnConfirm = null;
+            confirmModal.classList.remove('active');
+        });
+    }
+    if (confirmModal) {
+        confirmModal.addEventListener('click', function(e) {
+            if (e.target === confirmModal) confirmModal.classList.remove('active');
+        });
+    }
+
     // 고객후기 관리 이벤트
     const addReviewBtn = document.getElementById('addReviewBtn');
     if (addReviewBtn) {
@@ -410,9 +446,17 @@ async function updateStatus(id, status) {
 
 // 문의 삭제
 async function deleteInquiry(id) {
-    const confirmed = confirm('정말 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.');
-    if (!confirmed) return;
+    showConfirmModal({
+        title: '문의 삭제',
+        message: '정말 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.',
+        confirmText: '삭제',
+        cancelText: '취소',
+        danger: true,
+        onConfirm: () => doDeleteInquiry(id)
+    });
+}
 
+async function doDeleteInquiry(id) {
     try {
         const response = await fetch(`${API_BASE_URL}/inquiries/${id}`, {
             method: 'DELETE'
@@ -428,6 +472,7 @@ async function deleteInquiry(id) {
 
         renderInquiries();
         renderPagination();
+        showMessageModal('문의가 삭제되었습니다.', 'success');
     } catch (error) {
         console.error('Error deleting inquiry:', error);
         showError('문의 삭제에 실패했습니다.');
@@ -573,8 +618,51 @@ function getNextStatusText(currentStatus) {
     return statusFlow[currentStatus] || '처리시작';
 }
 
+// 알림 모달 (success | error | info)
+function showMessageModal(message, type) {
+    type = type || 'info';
+    const modal = document.getElementById('messageModal');
+    const iconEl = document.getElementById('messageModalIcon');
+    const textEl = document.getElementById('messageModalText');
+    if (!modal || !iconEl || !textEl) return;
+
+    const icons = {
+        success: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+        error: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+        info: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+    };
+
+    iconEl.className = 'message-modal-icon ' + type;
+    iconEl.innerHTML = icons[type] || icons.info;
+    textEl.textContent = message;
+    modal.classList.add('active');
+}
+
+// 확인 모달용 콜백 (한 번만 등록한 버튼에서 사용)
+let _confirmModalOnConfirm = null;
+
+// 확인 모달 (확인 시 onConfirm 호출)
+function showConfirmModal(options) {
+    const { title = '확인', message, confirmText = '확인', cancelText = '취소', onConfirm, danger = true } = options || {};
+    const modal = document.getElementById('confirmModal');
+    const titleEl = document.getElementById('confirmModalTitle');
+    const textEl = document.getElementById('confirmModalText');
+    const cancelBtn = document.getElementById('confirmModalCancel');
+    const confirmBtn = document.getElementById('confirmModalConfirm');
+    if (!modal || !textEl || !confirmBtn) return;
+
+    titleEl.textContent = title;
+    textEl.textContent = message;
+    cancelBtn.textContent = cancelText;
+    confirmBtn.textContent = confirmText;
+    confirmBtn.classList.toggle('btn-danger', danger);
+    _confirmModalOnConfirm = typeof onConfirm === 'function' ? onConfirm : null;
+    modal.classList.add('active');
+}
+
+// 기존 showError를 모달로
 function showError(message) {
-    alert(message);
+    showMessageModal(message, 'error');
 }
 
 // ========== 고객후기 관리 기능 ==========
@@ -707,7 +795,7 @@ async function saveReview() {
         
         // 파일 크기 체크 (5MB 제한)
         if (file.size > 5 * 1024 * 1024) {
-            alert('이미지 크기는 5MB 이하여야 합니다.');
+            showMessageModal('이미지 크기는 5MB 이하여야 합니다.', 'error');
             return;
         }
 
@@ -752,7 +840,7 @@ async function saveReview() {
     }
 
     if (!imageUrl) {
-        alert('이미지를 선택해주세요.');
+        showMessageModal('이미지를 선택해주세요.', 'error');
         return;
     }
 
@@ -774,15 +862,15 @@ async function saveReview() {
         const data = await response.json();
 
         if (data.success) {
-            alert(reviewId ? '고객후기가 수정되었습니다.' : '고객후기가 추가되었습니다.');
+            showMessageModal(reviewId ? '고객후기가 수정되었습니다.' : '고객후기가 추가되었습니다.', 'success');
             closeReviewModal();
             loadReviews();
         } else {
-            alert('저장에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+            showMessageModal('저장에 실패했습니다: ' + (data.error || '알 수 없는 오류'), 'error');
         }
     } catch (error) {
         console.error('Error saving review:', error);
-        alert('저장 중 오류가 발생했습니다.');
+        showMessageModal('저장 중 오류가 발생했습니다.', 'error');
     }
 }
 
@@ -802,11 +890,18 @@ function editReview(reviewId) {
 }
 
 // 고객후기 삭제
-async function deleteReview(reviewId) {
-    if (!confirm('정말 삭제하시겠습니까?')) {
-        return;
-    }
+function deleteReview(reviewId) {
+    showConfirmModal({
+        title: '고객후기 삭제',
+        message: '정말 삭제하시겠습니까?',
+        confirmText: '삭제',
+        cancelText: '취소',
+        danger: true,
+        onConfirm: () => doDeleteReview(reviewId)
+    });
+}
 
+async function doDeleteReview(reviewId) {
     try {
         const response = await fetch(`${API_BASE_URL}/reviews?id=${reviewId}`, {
             method: 'DELETE',
@@ -815,14 +910,14 @@ async function deleteReview(reviewId) {
         const data = await response.json();
 
         if (data.success) {
-            alert('고객후기가 삭제되었습니다.');
+            showMessageModal('고객후기가 삭제되었습니다.', 'success');
             loadReviews();
         } else {
-            alert('삭제에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+            showMessageModal('삭제에 실패했습니다: ' + (data.error || '알 수 없는 오류'), 'error');
         }
     } catch (error) {
         console.error('Error deleting review:', error);
-        alert('삭제 중 오류가 발생했습니다.');
+        showMessageModal('삭제 중 오류가 발생했습니다.', 'error');
     }
 }
 
