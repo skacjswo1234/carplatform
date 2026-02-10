@@ -679,14 +679,33 @@ async function loadReviews() {
         const data = await response.json();
 
         if (data.success && data.reviews) {
+            updateReviewStats(data.reviews);
             renderReviews(data.reviews);
         } else {
+            updateReviewStats([]);
             reviewsList.innerHTML = '<div class="error">데이터를 불러오는데 실패했습니다.</div>';
         }
     } catch (error) {
         console.error('Error loading reviews:', error);
+        updateReviewStats([]);
         reviewsList.innerHTML = '<div class="error">데이터를 불러오는데 실패했습니다.</div>';
     }
+}
+
+// 고객후기 통계 업데이트 (전체 / 활성 / 비활성)
+function updateReviewStats(reviews) {
+    const totalEl = document.getElementById('totalReviews');
+    const activeEl = document.getElementById('activeReviews');
+    const inactiveEl = document.getElementById('inactiveReviews');
+    if (!totalEl || !activeEl || !inactiveEl) return;
+
+    const total = reviews.length;
+    const active = reviews.filter(function(r) { return r.is_active === 1 || r.is_active === true; }).length;
+    const inactive = total - active;
+
+    totalEl.textContent = total;
+    activeEl.textContent = active;
+    inactiveEl.textContent = inactive;
 }
 
 // 고객후기 목록 렌더링
