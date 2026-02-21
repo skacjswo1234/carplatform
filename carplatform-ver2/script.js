@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initSlider();
     initMobileMenu();
     initModals();
-    initPopularSection();
+    // initPopularSection(); // h-6은 고객후기 섹션으로 변경됨
     initReviewSection();
     initForms();
     initSmoothScroll();
@@ -445,40 +445,124 @@ function initPopularSection() {
     renderPopularPagination();
 }
 
+// 고객후기 데이터 (PC 페이징/모바일 슬라이더에서 사용)
+let reviewList = [];
+
+// 고객후기 카드 HTML 생성 (인기차종 카드와 동일한 디자인)
+function createReviewCard(review) {
+    if (!review) return '';
+    const text = review.text_content ? review.text_content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+    return `
+        <div class="car-card popular-car-card">
+            <img src="${review.image_url || ''}" alt="고객후기" onerror="this.style.display='none'">
+            <div class="car-info">
+                <div class="car-name">${text}</div>
+            </div>
+        </div>
+    `;
+}
+
 // 고객후기 섹션 초기화
 async function initReviewSection() {
     const reviewGrid = document.getElementById('reviewGrid');
+    const reviewPagination = document.getElementById('reviewPagination');
+    const reviewSliderTrack = document.getElementById('reviewSliderTrack');
     if (!reviewGrid) return;
-    
+
+    const setEmptyMessage = (msg) => {
+        reviewGrid.innerHTML = `<p style="text-align: center; padding: 40px; color: #666;">${msg}</p>`;
+        if (reviewPagination) reviewPagination.innerHTML = '';
+        if (reviewSliderTrack) reviewSliderTrack.innerHTML = '';
+    };
+
     try {
-        // API에서 활성화된 고객후기만 불러오기
         const response = await fetch('/api/reviews?active=true');
         const data = await response.json();
 
-        if (data.success && data.reviews && data.reviews.length > 0) {
-            renderReviews(data.reviews);
-        } else {
-            reviewGrid.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">고객후기를 준비중입니다.</p>';
+        if (!data.success || !data.reviews || data.reviews.length === 0) {
+            setEmptyMessage('고객후기를 준비중입니다.');
+            return;
+        }
+
+        reviewList = data.reviews;
+
+        // PC: 8개씩 페이징 (가로 4 x 세로 2)
+        const perPage = 8;
+        let reviewCurrentPage = 1;
+        const totalPages = Math.ceil(reviewList.length / perPage);
+
+        function renderReviewGridPage(page) {
+            const start = (page - 1) * perPage;
+            const slice = reviewList.slice(start, start + perPage);
+            reviewGrid.innerHTML = slice.map(createReviewCard).join('');
+        }
+
+        function renderReviewPagination() {
+            if (!reviewPagination || totalPages <= 1) return;
+            reviewPagination.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.classList.toggle('active', i === reviewCurrentPage);
+                btn.addEventListener('click', () => {
+                    reviewCurrentPage = i;
+                    renderReviewGridPage(reviewCurrentPage);
+                    renderReviewPagination();
+                    const section = document.getElementById('review');
+                    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+                reviewPagination.appendChild(btn);
+            }
+        }
+
+        renderReviewGridPage(reviewCurrentPage);
+        renderReviewPagination();
+
+        // 모바일: 1장씩 슬라이더 + 좌우 화살표 + 자동 슬라이드 (2.5초)
+        if (reviewSliderTrack) {
+            reviewSliderTrack.innerHTML = reviewList.map(review =>
+                `<div class="review-slide">${createReviewCard(review)}</div>`
+            ).join('');
+
+            let slideIndex = 0;
+            const slides = reviewSliderTrack.querySelectorAll('.review-slide');
+            const totalSlides = slides.length;
+
+            function setSlidePosition() {
+                if (totalSlides === 0) return;
+                const offset = -slideIndex * 100;
+                reviewSliderTrack.style.transform = `translateX(${offset}%)`;
+            }
+
+            function goNext() {
+                slideIndex = (slideIndex + 1) % totalSlides;
+                setSlidePosition();
+            }
+            function goPrev() {
+                slideIndex = slideIndex <= 0 ? totalSlides - 1 : slideIndex - 1;
+                setSlidePosition();
+            }
+
+            const nextBtn = document.querySelector('.review-slider-next');
+            const prevBtn = document.querySelector('.review-slider-prev');
+            if (nextBtn) nextBtn.addEventListener('click', goNext);
+            if (prevBtn) prevBtn.addEventListener('click', goPrev);
+
+            setSlidePosition();
+            let autoSlideTimer = setInterval(goNext, 2500);
+
+            // 사용자가 버튼 클릭하면 자동재생 리셋
+            function resetAutoSlide() {
+                clearInterval(autoSlideTimer);
+                autoSlideTimer = setInterval(goNext, 2500);
+            }
+            if (nextBtn) nextBtn.addEventListener('click', resetAutoSlide);
+            if (prevBtn) prevBtn.addEventListener('click', resetAutoSlide);
         }
     } catch (error) {
         console.error('Error loading reviews:', error);
-        reviewGrid.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">고객후기를 불러오는데 실패했습니다.</p>';
+        setEmptyMessage('고객후기를 불러오는데 실패했습니다.');
     }
-}
-
-// 고객후기 렌더링
-function renderReviews(reviews) {
-    const reviewGrid = document.getElementById('reviewGrid');
-    if (!reviewGrid) return;
-
-    reviewGrid.innerHTML = reviews.map(review => `
-        <div class="review-card">
-            <div class="review-image">
-                <img src="${review.image_url}" alt="고객후기" onerror="this.style.display='none'">
-            </div>
-            ${review.text_content ? `<div class="review-text">${review.text_content}</div>` : ''}
-        </div>
-    `).join('');
 }
 
 // 전화번호 입력란 숫자만 허용

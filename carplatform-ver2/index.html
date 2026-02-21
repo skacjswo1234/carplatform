@@ -15,7 +15,6 @@
             </div>
             <nav class="nav-desktop">
                 <a href="#estimate">견적비교</a>
-                <a href="#popular">인기차종</a>
                 <a href="#youtube">유투브</a>
                 <a href="#review">고객후기</a>
                 <a href="#consultation">상담신청</a>
@@ -33,7 +32,6 @@
                 <img src="images/logo.png" alt="카플랫폼 로고">
             </div>
             <a href="#estimate">견적비교</a>
-            <a href="#popular">인기차종</a>
             <a href="#youtube">유투브</a>
             <a href="#review">고객후기</a>
             <a href="#consultation">상담신청</a>
@@ -64,7 +62,6 @@
 
     <!-- h-2 섹션 -->
     <section class="h-2-section" id="h-2">
-        <div class="h-2-bg"></div>
         <div class="container">
             <div class="h-2-title animate-bounce">
                 <img src="images/h-2/h-2-title.png" alt="견적비교의 새로운 기준">
@@ -72,12 +69,18 @@
             <div class="h-2-text">
                 <img src="images/h-2/h-2-text.png" alt="최고의 조건으로 차량을 구매하세요">
             </div>
-            <div class="h-2-videos">
-                <div class="h-2-video">
-                    <video src="images/h-2/h-2-v1.mp4" controls autoplay muted playsinline loop></video>
+        </div>
+    </section>
+
+    <!-- h-2-1 섹션 (배경: h-2-bg / h-2-bg-m, 영상만 표시) -->
+    <section class="h-2-1-section" id="h-2-1">
+        <div class="container h-2-1-container">
+            <div class="h-2-1-videos">
+                <div class="h-2-1-video">
+                    <video src="images/h-2/h-2-v1.mp4" controls autoplay muted playsinline loop preload="auto" disablePictureInPicture></video>
                 </div>
-                <div class="h-2-video">
-                    <video src="images/h-2/h-2-v2.mp4" controls autoplay muted playsinline loop></video>
+                <div class="h-2-1-video">
+                    <video src="images/h-2/h-2-v2.mp4" controls autoplay muted playsinline loop preload="auto" disablePictureInPicture></video>
                 </div>
             </div>
         </div>
@@ -135,9 +138,9 @@
             <div class="h-4-content">
                 <img src="images/h-4/h-4-content.png" alt="견적 비교 내용">
             </div>
-            <button class="h-4-btn">
+            <!-- <button class="h-4-btn">
                 <img src="images/h-4/h-4-btn.png" alt="견적 비교하기">
-            </button>
+            </button> -->
         </div>
     </section>
 
@@ -157,20 +160,31 @@
         </div>
     </section>
 
-    <!-- h-6 섹션 (인기차종) -->
-    <section class="h-6-section" id="popular">
+    <!-- h-6 섹션 (고객후기) -->
+    <section class="h-6-section" id="review">
         <div class="h-6-bg"></div>
         <div class="container">
             <div class="h-6-title animate-scale">
-                <img src="images/h-6/h-6-title.png" alt="인기 차종">
+                <img src="images/h-6/h-6-title.png" alt="고객 후기">
             </div>
             <div class="h-6-text-img">
-                <img src="images/h-6/h-6-text.png" alt="고객들이 가장 많이 찾는 차량들">
+                <img src="images/h-6/h-6-text.png" alt="실시간 고객 후기">
             </div>
-            <div class="car-grid" id="popularCarGrid">
-                <!-- 차량 카드들이 여기에 동적으로 추가됩니다 -->
+            <!-- PC: 가로 4줄 세로 2줄 (8개) + 페이징 -->
+            <div class="review-pc-only">
+                <div class="car-grid" id="reviewGrid">
+                    <!-- 고객후기 카드 8개씩 동적 추가 -->
+                </div>
+                <div class="pagination" id="reviewPagination"></div>
             </div>
-            <div class="pagination" id="popularPagination"></div>
+            <!-- 모바일: 1장씩 슬라이드 + 좌우 화살표 + 자동 슬라이드 -->
+            <div class="review-mobile-only review-slider-mobile">
+                <button type="button" class="review-slider-btn review-slider-prev" aria-label="이전 후기">‹</button>
+                <div class="review-slider-track-wrap">
+                    <div class="review-slider-track" id="reviewSliderTrack"></div>
+                </div>
+                <button type="button" class="review-slider-btn review-slider-next" aria-label="다음 후기">›</button>
+            </div>
         </div>
     </section>
 
@@ -233,28 +247,6 @@
                     <img src="images/h-9/h-9-btn.png" alt="문의하기">
                 </button>
             </form>
-        </div>
-    </section>
-
-    <!-- h-10 섹션 (고객후기) -->
-    <section class="h-10-section" id="review">
-        <div class="h-10-bg"></div>
-        <div class="container">
-            <div class="h-10-header">
-                <div class="h-10-title animate-scale">
-                    <img src="images/h-10/h-10-title.png" alt="고객 후기">
-                </div>
-                <p class="h-10-subtitle">
-                    <span class="h-10-emoji" aria-hidden="true">💬</span>
-                    <span class="h-10-emoji" aria-hidden="true">⭐</span>
-                    실시간 후기
-                    <span class="h-10-emoji" aria-hidden="true">✨</span>
-                    <span class="h-10-emoji" aria-hidden="true">👍</span>
-                </p>
-            </div>
-            <div class="review-container" id="reviewGrid">
-                <!-- 고객 후기 카드들이 여기에 동적으로 추가됩니다 -->
-            </div>
         </div>
     </section>
 
