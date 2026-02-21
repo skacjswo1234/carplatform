@@ -673,8 +673,9 @@ body {
 
 .h-6-section .car-card img {
     width: 100%;
-    height: 200px;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
+    display: block;
 }
 
 .car-info {
@@ -918,10 +919,34 @@ body {
 .h-8-content {
     text-align: center;
 }
-
 .h-8-content img {
     max-width: 100%;
     height: auto;
+}
+
+/* 모바일에서는 h-8-content 숨김, h-8-content-m 표시 */
+.h-8-content-m {
+    display: none;
+    text-align: center;
+}
+.h-8-content-m img {
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 768px) {
+    .h-8-section .h-8-content {
+        display: none !important;
+    }
+    .h-8-section .h-8-content-m {
+        display: block;
+    }
+}
+
+@media (min-width: 769px) {
+    .h-8-section .h-8-content-m {
+        display: none !important;
+    }
 }
 
 /* h-9 섹션 */
