@@ -301,6 +301,21 @@ body {
     height: auto;
 }
 
+/* h-2 모바일 전용: 섹션 배경 이미지 + title·text 상단 배치 */
+@media (max-width: 768px) {
+    .h-2-section {
+        background-image: url('images/h-2/h-2-bg-m.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        padding-top: 32px;
+        align-items: flex-start;
+    }
+    .h-2-section .container {
+        padding-top: 0;
+    }
+}
+
 /* h-2-1 섹션 (배경: h-2-bg / h-2-bg-m, 영상만 표시) */
 .h-2-1-section {
     position: relative;
@@ -1543,10 +1558,10 @@ body {
         height: 100%;
     }
 
-    /* h-2-1 모바일: 배경 h-2-bg-m */
+    /* h-2-1 모바일: h-2-bg-m 제거 (영상만 표시) */
     .h-2-1-section {
         padding: 40px 0;
-        background-image: url('images/h-2/h-2-bg-m.png');
+        background-image: none;
     }
 
     .h-2-1-container {
