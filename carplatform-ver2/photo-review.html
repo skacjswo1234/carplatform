@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포토후기 - 카플랫폼</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 헤더 (디자인 유지, 링크는 메인으로) -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html"><img src="images/logo.png" alt="카플랫폼 로고"></a>
+            </div>
+            <nav class="nav-desktop">
+                <a href="index.html#estimate">견적비교</a>
+                <a href="index.html#youtube">유투브</a>
+                <a href="index.html#review">고객후기</a>
+                <a href="index.html#consultation">상담신청</a>
+            </nav>
+            <button class="mobile-menu-toggle" aria-label="메뉴 열기">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <nav class="nav-mobile">
+            <button class="mobile-menu-close" aria-label="메뉴 닫기">×</button>
+            <div class="mobile-menu-logo">
+                <img src="images/logo.png" alt="카플랫폼 로고">
+            </div>
+            <a href="index.html#estimate">견적비교</a>
+            <a href="index.html#youtube">유투브</a>
+            <a href="index.html#review">고객후기</a>
+            <a href="index.html#consultation">상담신청</a>
+        </nav>
+    </header>
+
+    <!-- 포토후기 본문: PC 5x4(20개) / 모바일 2x10(20개) + 페이징 -->
+    <main class="photo-review-page">
+        <section class="photo-review-section">
+            <div class="container">
+                <h1 class="photo-review-title">포토후기</h1>
+                <div class="photo-review-grid-wrap">
+                    <div class="car-grid review-grid-full" id="photoReviewGrid"></div>
+                    <div class="pagination" id="photoReviewPagination"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 푸터 (디자인 유지) -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="images/logo.png" alt="카플랫폼 로고">
+                </div>
+                <div class="footer-info">
+                    <p>회사명: 카플랫폼(이지플랫폼)</p>
+                    <p>대표: 장소라</p>
+                    <p>정보관리책임자: 안덕기</p>
+                    <p>사업자등록번호: 526-12-01412</p>
+                    <p>통신판매신고: 2020-고양덕양구-0932</p>
+                    <p>전화번호: 1688-7446</p>
+                    <p>이메일: ezplat@naver.com</p>
+                    <p>주소: 경기도 고양시 덕양구 토당로 168, 동아3빌딩 404호</p>
+                    <p>주소: 경기도 고양시 일산동구 중앙로 1261번길 59, 7층 702호</p>
+                    <p class="copyright">Copyright ⓒ 2023 카플랫폼. ALL RIGHTS RESERVED.</p>
+                </div>
+            </div>
+        </div>
+        <div class="mini-consultation" id="miniConsultation">
+            <div class="mini-consultation-header">
+                <img src="images/icon-header.png" alt="카플랫폼 상담신청">
+            </div>
+            <div class="mini-consultation-body">
+                <form class="mini-form">
+                    <div class="mini-form-group">
+                        <input type="text" placeholder="성함" required>
+                    </div>
+                    <div class="mini-form-group">
+                        <input type="tel" placeholder="연락처" required>
+                    </div>
+                    <div class="mini-form-group">
+                        <input type="text" placeholder="차종" required>
+                    </div>
+                    <div class="mini-privacy">
+                        <label class="mini-checkbox-label">
+                            <input type="checkbox" required>
+                            <span>개인정보처리방침 동의</span>
+                            <button type="button" class="mini-view-btn" data-modal="privacy">[보기]</button>
+                        </label>
+                    </div>
+                    <button type="submit" class="mini-submit-btn">상담신청</button>
+                </form>
+            </div>
+            <button class="mini-consultation-toggle" id="miniToggle">
+                <span class="toggle-icon">×</span>
+            </button>
+        </div>
+        <a href="#" class="kakao-float" id="kakaoBtn">
+            <img src="images/kakao-img.png" alt="카카오톡 상담">
+        </a>
+        <button class="top-btn" id="topBtn" aria-label="맨 위로">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4L4 12H8V20H16V12H20L12 4Z" fill="currentColor"/>
+            </svg>
+        </button>
+        <div class="mobile-fixed-bar">
+            <a href="index.html#consultation" class="mobile-consult-btn">
+                <img src="images/icon-header.png" alt="상담신청">
+            </a>
+            <a href="#" class="mobile-kakao-btn">
+                <img src="images/kakao-img.png" alt="카카오톡 상담">
+            </a>
+        </div>
+    </footer>
+
+    <div class="modal" id="privacyModal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h3>개인정보 제3자 제공및 위탁 이용 동의서</h3>
+            <div class="modal-body">
+                <p><strong>1. 개인(신용)정보를 제공 받는 자</strong></p>
+                <p>카플랫폼 제휴업체</p>
+                <br>
+                <p><strong>2. 개인정보 수집및 이용 목적</strong></p>
+                <p>신차 구입(할부/장기렌트/신차리스/중고차리스) 상품 관련 상담 및 계약진행</p>
+                <br>
+                <p><strong>3. 수집하는 개인정보 항목</strong></p>
+                <p>이름, 연락처, 제조사, 모델명, 세부모델, 옵션, 구입선택, 초기자금, 계약기간,개인/개인사업자/법인사업자 정보</p>
+                <br>
+                <p><strong>4. 보유및 이용기간</strong></p>
+                <p>최종 상담일로 1년후 파기</p>
+                <br>
+                <p>귀하의 수집,이용 동의를 거부할 권리가 있으나, 동의하지 않으실 경우 상담이 불가능 할 수 있음을 알려 드립니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="marketingModal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h3>마케팅정보수신 동의</h3>
+            <div class="modal-body">
+                <p><strong>1. 개인정보 수집및 이용 목적</strong></p>
+                <p>신차 구입(할부/장기렌트/신차리스/중고차리스) 상품 관련 상담 및 계약진행</p>
+                <br>
+                <p><strong>2. 수집하는 개인정보 항목</strong></p>
+                <p>이름, 연락처, 제조사, 모델명, 세부모델, 옵션, 구입선택, 초기자금, 계약기간,개인/개인사업자/법인사업자 정보</p>
+                <br>
+                <p><strong>3. 보유및 이용기간</strong></p>
+                <p>최종 상담일로 1년후 파기</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="photo-review.js"></script>
+</body>
+</html>

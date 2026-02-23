@@ -651,6 +651,66 @@ body {
     z-index: 2;
 }
 
+/* h-6 메인: PC 가로 5개 세로 2줄 (10개) */
+.h-6-section .review-grid-index {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.review-more-wrap {
+    text-align: center;
+    margin-top: 8px;
+    position: relative;
+    z-index: 2;
+}
+
+.review-more-btn {
+    display: inline-block;
+    padding: 14px 36px;
+    background: linear-gradient(135deg, #c62828 0%, #d32f2f 100%);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 30px;
+    box-shadow: 0 4px 14px rgba(198, 40, 40, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.review-more-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(198, 40, 40, 0.45);
+}
+
+/* 포토후기 전용 페이지: PC 5x4(20개) / 모바일 2x10(20개) */
+.photo-review-page {
+    min-height: 60vh;
+}
+.photo-review-section {
+    padding: 60px 0 80px;
+    position: relative;
+}
+.photo-review-section .container {
+    position: relative;
+    z-index: 1;
+}
+.photo-review-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: #2c2c2c;
+    margin-bottom: 40px;
+}
+.photo-review-grid-wrap .review-grid-full {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 24px;
+    margin-bottom: 20px;
+}
+.photo-review-grid-wrap .pagination {
+    margin-top: 32px;
+}
+
 .car-card {
     background: white;
     border-radius: 10px;
@@ -789,70 +849,28 @@ body {
     border-color: #d32f2f;
 }
 
-/* h-6 고객후기: PC(그리드+페이징) / 모바일(슬라이더) */
-.review-pc-only {
-    display: block;
-}
-.review-mobile-only {
-    display: none;
-}
-
-.review-slider-mobile {
-    align-items: center;
-    gap: 12px;
-    position: relative;
-}
-.review-slider-track-wrap {
-    flex: 1;
-    overflow: hidden;
-    min-width: 0;
-}
-.review-slider-track {
-    display: flex;
-    transition: transform 0.35s ease-out;
-    will-change: transform;
-}
-.review-slider-mobile .review-slide {
-    flex: 0 0 100%;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0 6px;
-}
-.review-slider-mobile .review-slide .car-card {
-    margin: 0 auto;
-    max-width: 340px;
-}
-.review-slider-btn {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.9);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-    cursor: pointer;
-    font-size: 28px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #333;
-    transition: background 0.2s, transform 0.2s;
-}
-.review-slider-btn:hover {
-    background: #fff;
-    transform: scale(1.05);
-}
-.review-slider-btn:active {
-    transform: scale(0.98);
-}
-
+/* h-6 모바일: 가로 2개 세로 5줄 (10개) */
 @media (max-width: 768px) {
-    .review-pc-only {
-        display: none;
+    .h-6-section .review-grid-index {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
     }
-    .review-mobile-only {
-        display: flex;
+    .review-more-btn {
+        padding: 12px 28px;
+        font-size: 15px;
+    }
+}
+
+/* 포토후기 페이지 모바일: 가로 2개 세로 10줄 (20개) */
+@media (max-width: 768px) {
+    .photo-review-grid-wrap .review-grid-full {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+    .photo-review-title {
+        font-size: 22px;
+        margin-bottom: 24px;
     }
 }
 
@@ -1073,7 +1091,7 @@ body {
     z-index: 2;
 }
 
-/* 고객후기 카드 – 트렌디 스타일 */
+/* 고객후기 카드 – 상단: 대표이미지 → 클릭안내 → 상세타이틀 → 카플랫폼|등록일 → 상품정보 */
 .review-card {
     background: rgba(255, 255, 255, 0.98);
     border-radius: 20px;
@@ -1094,13 +1112,13 @@ body {
         0 0 0 1px rgba(255, 255, 255, 0.6) inset;
 }
 
-.review-card .review-image {
+.review-card-image-wrap {
     flex-shrink: 0;
     overflow: hidden;
     background: #f5f5f5;
 }
 
-.review-card img {
+.review-card-image {
     width: 100%;
     height: auto;
     max-height: 260px;
@@ -1108,17 +1126,58 @@ body {
     display: block;
 }
 
-.review-card .review-text {
-    padding: 22px 24px 26px;
+.review-card-click-msg {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.review-card-title {
+    margin: 0 16px 8px;
+    font-size: 16px;
+    font-weight: 700;
     color: #2c2c2c;
-    font-size: 15px;
-    line-height: 1.7;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.review-card-meta {
+    margin: 0 16px 12px;
+    font-size: 13px;
+    color: #888;
+}
+
+.review-card-product {
+    margin: 0 16px 20px 16px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.review-card-product-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+}
+
+.review-card-product-content {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: break-word;
-    flex: 1;
-    min-height: 0;
-    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .review-text {
@@ -1586,14 +1645,14 @@ body {
         gap: 24px;
     }
 
-    .review-card img {
+    .review-card .review-card-image {
         height: auto;
         max-height: 220px;
     }
 
-    .review-card .review-text {
-        padding: 18px 20px 22px;
-        font-size: 14px;
+    .review-card .review-card-product-content {
+        padding: 0;
+        font-size: 13px;
     }
 
     .footer-content {
@@ -1666,15 +1725,14 @@ body {
         gap: 20px;
     }
 
-    .review-card img {
+    .review-card .review-card-image {
         height: auto;
         max-height: 240px;
     }
 
-    .review-card .review-text,
+    .review-card .review-card-product-content,
     .review-text {
-        padding: 18px 20px 22px;
-        font-size: 14px;
+        font-size: 13px;
         line-height: 1.65;
     }
 

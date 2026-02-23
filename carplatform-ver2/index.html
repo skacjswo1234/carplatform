@@ -170,20 +170,14 @@
             <div class="h-6-text-img">
                 <img src="images/h-6/h-6-text.png" alt="실시간 고객 후기">
             </div>
-            <!-- PC: 가로 4줄 세로 2줄 (8개) + 페이징 -->
-            <div class="review-pc-only">
-                <div class="car-grid" id="reviewGrid">
-                    <!-- 고객후기 카드 8개씩 동적 추가 -->
+            <!-- PC: 가로 5개 세로 2줄 (10개) / 모바일: 가로 2개 세로 5줄 (10개) -->
+            <div class="review-index-wrap">
+                <div class="car-grid review-grid-index" id="reviewGrid">
+                    <!-- 고객후기 카드 10개 동적 추가 -->
                 </div>
-                <div class="pagination" id="reviewPagination"></div>
-            </div>
-            <!-- 모바일: 1장씩 슬라이드 + 좌우 화살표 + 자동 슬라이드 -->
-            <div class="review-mobile-only review-slider-mobile">
-                <button type="button" class="review-slider-btn review-slider-prev" aria-label="이전 후기">‹</button>
-                <div class="review-slider-track-wrap">
-                    <div class="review-slider-track" id="reviewSliderTrack"></div>
+                <div class="review-more-wrap">
+                    <a href="photo-review.html" class="review-more-btn">포토후기 더보기</a>
                 </div>
-                <button type="button" class="review-slider-btn review-slider-next" aria-label="다음 후기">›</button>
             </div>
         </div>
     </section>

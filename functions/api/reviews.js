@@ -13,6 +13,7 @@ export async function onRequestGet(context) {
       SELECT 
         id,
         image_url,
+        title,
         text_content,
         display_order,
         is_active,
@@ -59,7 +60,7 @@ export async function onRequestPost(context) {
   
   try {
     const body = await request.json();
-    const { id, image_url, text_content, display_order, is_active } = body;
+    const { id, image_url, title, text_content, display_order, is_active } = body;
 
     if (!image_url) {
       return new Response(JSON.stringify({
@@ -82,12 +83,13 @@ export async function onRequestPost(context) {
       const result = await db.prepare(`
         UPDATE reviews 
         SET image_url = ?, 
+            title = ?,
             text_content = ?, 
             display_order = ?, 
             is_active = ?,
             updated_at = ?
         WHERE id = ?
-      `).bind(image_url, text_content || null, display_order || 0, is_active ? 1 : 0, kstDateTime, id).run();
+      `).bind(image_url, title || null, text_content || null, display_order || 0, is_active ? 1 : 0, kstDateTime, id).run();
 
       if (result.success) {
         return new Response(JSON.stringify({
@@ -103,9 +105,9 @@ export async function onRequestPost(context) {
     } else {
       // 추가
       const result = await db.prepare(`
-        INSERT INTO reviews (image_url, text_content, display_order, is_active, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).bind(image_url, text_content || null, display_order || 0, is_active ? 1 : 0, kstDateTime, kstDateTime).run();
+        INSERT INTO reviews (image_url, title, text_content, display_order, is_active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(image_url, title || null, text_content || null, display_order || 0, is_active ? 1 : 0, kstDateTime, kstDateTime).run();
 
       if (result.success) {
         const reviewId = result.meta.last_row_id;

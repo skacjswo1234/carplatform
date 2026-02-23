@@ -1000,6 +1000,12 @@ body {
     gap: 12px;
 }
 
+.review-item .review-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
 .review-item .review-text {
     color: var(--text-primary);
     word-break: break-word;

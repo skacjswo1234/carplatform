@@ -448,31 +448,48 @@ function initPopularSection() {
 // 고객후기 데이터 (PC 페이징/모바일 슬라이더에서 사용)
 let reviewList = [];
 
-// 고객후기 카드 HTML 생성 (인기차종 카드와 동일한 디자인)
+// 고객후기 카드 HTML 생성 (대표이미지 → 클릭안내 → 상세타이틀 → 카플랫폼|등록일 → 상품정보)
+function formatReviewDate(createdAt) {
+    if (!createdAt) return '';
+    try {
+        const d = new Date(createdAt);
+        if (isNaN(d.getTime())) return '';
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}.${m}.${day}`;
+    } catch (_) { return ''; }
+}
+
 function createReviewCard(review) {
     if (!review) return '';
     const text = review.text_content ? review.text_content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+    const titleStr = review.title ? review.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+    const detailTitle = titleStr || (text ? (text.length > 40 ? text.slice(0, 40) + '…' : text) : '고객 후기');
+    const dateStr = formatReviewDate(review.created_at);
     return `
-        <div class="car-card popular-car-card">
-            <img src="${review.image_url || ''}" alt="고객후기" onerror="this.style.display='none'">
-            <div class="car-info">
-                <div class="car-name">${text}</div>
+        <article class="review-card">
+            <div class="review-card-image-wrap">
+                <img src="${review.image_url || ''}" alt="고객후기 대표이미지" class="review-card-image" onerror="this.style.display='none'">
             </div>
-        </div>
+            <p class="review-card-click-msg">사진을 클릭하시면 상세내역을 보실 수 있습니다. 클릭♥</p>
+            <h3 class="review-card-title">${detailTitle}</h3>
+            <p class="review-card-meta">카플랫폼 ${dateStr ? '| ' + dateStr : ''}</p>
+            <div class="review-card-product">
+                <span class="review-card-product-label">상품정보&gt;</span>
+                <div class="review-card-product-content">${text || '-'}</div>
+            </div>
+        </article>
     `;
 }
 
-// 고객후기 섹션 초기화
+// 고객후기 섹션 초기화 (메인: 10개만 표시, 포토후기 더보기로 전체 보기)
 async function initReviewSection() {
     const reviewGrid = document.getElementById('reviewGrid');
-    const reviewPagination = document.getElementById('reviewPagination');
-    const reviewSliderTrack = document.getElementById('reviewSliderTrack');
     if (!reviewGrid) return;
 
     const setEmptyMessage = (msg) => {
         reviewGrid.innerHTML = `<p style="text-align: center; padding: 40px; color: #666;">${msg}</p>`;
-        if (reviewPagination) reviewPagination.innerHTML = '';
-        if (reviewSliderTrack) reviewSliderTrack.innerHTML = '';
     };
 
     try {
@@ -485,80 +502,9 @@ async function initReviewSection() {
         }
 
         reviewList = data.reviews;
-
-        // PC: 8개씩 페이징 (가로 4 x 세로 2)
-        const perPage = 8;
-        let reviewCurrentPage = 1;
-        const totalPages = Math.ceil(reviewList.length / perPage);
-
-        function renderReviewGridPage(page) {
-            const start = (page - 1) * perPage;
-            const slice = reviewList.slice(start, start + perPage);
-            reviewGrid.innerHTML = slice.map(createReviewCard).join('');
-        }
-
-        function renderReviewPagination() {
-            if (!reviewPagination || totalPages <= 1) return;
-            reviewPagination.innerHTML = '';
-            for (let i = 1; i <= totalPages; i++) {
-                const btn = document.createElement('button');
-                btn.textContent = i;
-                btn.classList.toggle('active', i === reviewCurrentPage);
-                btn.addEventListener('click', () => {
-                    reviewCurrentPage = i;
-                    renderReviewGridPage(reviewCurrentPage);
-                    renderReviewPagination();
-                    const section = document.getElementById('review');
-                    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
-                reviewPagination.appendChild(btn);
-            }
-        }
-
-        renderReviewGridPage(reviewCurrentPage);
-        renderReviewPagination();
-
-        // 모바일: 1장씩 슬라이더 + 좌우 화살표 + 자동 슬라이드 (2.5초)
-        if (reviewSliderTrack) {
-            reviewSliderTrack.innerHTML = reviewList.map(review =>
-                `<div class="review-slide">${createReviewCard(review)}</div>`
-            ).join('');
-
-            let slideIndex = 0;
-            const slides = reviewSliderTrack.querySelectorAll('.review-slide');
-            const totalSlides = slides.length;
-
-            function setSlidePosition() {
-                if (totalSlides === 0) return;
-                const offset = -slideIndex * 100;
-                reviewSliderTrack.style.transform = `translateX(${offset}%)`;
-            }
-
-            function goNext() {
-                slideIndex = (slideIndex + 1) % totalSlides;
-                setSlidePosition();
-            }
-            function goPrev() {
-                slideIndex = slideIndex <= 0 ? totalSlides - 1 : slideIndex - 1;
-                setSlidePosition();
-            }
-
-            const nextBtn = document.querySelector('.review-slider-next');
-            const prevBtn = document.querySelector('.review-slider-prev');
-            if (nextBtn) nextBtn.addEventListener('click', goNext);
-            if (prevBtn) prevBtn.addEventListener('click', goPrev);
-
-            setSlidePosition();
-            let autoSlideTimer = setInterval(goNext, 2500);
-
-            // 사용자가 버튼 클릭하면 자동재생 리셋
-            function resetAutoSlide() {
-                clearInterval(autoSlideTimer);
-                autoSlideTimer = setInterval(goNext, 2500);
-            }
-            if (nextBtn) nextBtn.addEventListener('click', resetAutoSlide);
-            if (prevBtn) prevBtn.addEventListener('click', resetAutoSlide);
-        }
+        const showCount = 10;
+        const slice = reviewList.slice(0, showCount);
+        reviewGrid.innerHTML = slice.map(createReviewCard).join('');
     } catch (error) {
         console.error('Error loading reviews:', error);
         setEmptyMessage('고객후기를 불러오는데 실패했습니다.');

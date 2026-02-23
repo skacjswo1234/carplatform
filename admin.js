@@ -724,7 +724,8 @@ function renderReviews(reviews) {
                 <img src="${review.image_url}" alt="고객후기 이미지" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E이미지 없음%3C/text%3E%3C/svg%3E'">
             </div>
             <div class="review-content">
-                <div class="review-text">${review.text_content || '(텍스트 없음)'}</div>
+                <div class="review-title">${review.title ? review.title : '(타이틀 없음)'}</div>
+                <div class="review-text">${review.text_content || '(설명 없음)'}</div>
                 <div class="review-meta">
                     <span>순서: ${review.display_order}</span>
                     <span class="status ${review.is_active ? 'active' : 'inactive'}">${review.is_active ? '활성' : '비활성'}</span>
@@ -750,12 +751,13 @@ function openReviewModal(reviewId = null) {
     if (reviewId) {
         modalTitle.textContent = '고객후기 수정';
         document.getElementById('reviewId').value = reviewId;
-        // 기존 데이터 불러오기
         loadReviewData(reviewId);
     } else {
         modalTitle.textContent = '고객후기 추가';
         form.reset();
         document.getElementById('reviewId').value = '';
+        document.getElementById('reviewTitle').value = '';
+        document.getElementById('reviewText').value = '';
         imagePreview.innerHTML = '';
     }
 
@@ -771,6 +773,7 @@ async function loadReviewData(reviewId) {
         if (data.success && data.reviews) {
             const review = data.reviews.find(r => r.id === reviewId);
             if (review) {
+                document.getElementById('reviewTitle').value = review.title || '';
                 document.getElementById('reviewText').value = review.text_content || '';
                 document.getElementById('reviewOrder').value = review.display_order || 0;
                 document.getElementById('reviewActive').checked = review.is_active === 1;
@@ -801,6 +804,7 @@ async function saveReview() {
     const form = document.getElementById('reviewForm');
     const reviewId = document.getElementById('reviewId').value;
     const imageInput = document.getElementById('reviewImage');
+    const title = document.getElementById('reviewTitle').value.trim();
     const textContent = document.getElementById('reviewText').value;
     const displayOrder = parseInt(document.getElementById('reviewOrder').value) || 0;
     const isActive = document.getElementById('reviewActive').checked;
@@ -872,6 +876,7 @@ async function saveReview() {
             body: JSON.stringify({
                 id: reviewId || null,
                 image_url: imageUrl,
+                title: title || null,
                 text_content: textContent,
                 display_order: displayOrder,
                 is_active: isActive
