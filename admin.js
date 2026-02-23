@@ -167,10 +167,42 @@ function initEventListeners() {
         });
     }
 
-    const reviewImagesInput = document.getElementById('reviewImages');
+    var reviewImagesInput = document.getElementById('reviewImages');
+    var fileUploadArea = document.getElementById('fileUploadArea');
     if (reviewImagesInput) {
         reviewImagesInput.addEventListener('change', function(e) {
             previewReviewImages(e.target.files);
+        });
+    }
+    if (fileUploadArea && reviewImagesInput) {
+        fileUploadArea.addEventListener('click', function() {
+            reviewImagesInput.click();
+        });
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileUploadArea.classList.add('drag-over');
+        });
+        fileUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileUploadArea.classList.remove('drag-over');
+        });
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileUploadArea.classList.remove('drag-over');
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (!files || files.length === 0) return;
+            var list = [];
+            for (var i = 0; i < Math.min(files.length, MAX_REVIEW_IMAGES); i++) {
+                if (files[i].type.indexOf('image/') === 0) list.push(files[i]);
+            }
+            if (list.length === 0) return;
+            var dt = new DataTransfer();
+            list.forEach(function(f) { dt.items.add(f); });
+            reviewImagesInput.files = dt.files;
+            previewReviewImages(reviewImagesInput.files);
         });
     }
 }

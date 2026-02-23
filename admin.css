@@ -1161,6 +1161,11 @@ body {
     background: rgba(255, 68, 68, 0.05);
 }
 
+.file-upload-area.drag-over {
+    border-color: var(--accent);
+    background: rgba(255, 68, 68, 0.12);
+}
+
 .file-upload-area input[type="file"] {
     position: absolute;
     top: 0;
@@ -1169,6 +1174,7 @@ body {
     height: 100%;
     opacity: 0;
     cursor: pointer;
+    pointer-events: none;
 }
 
 .upload-placeholder {
