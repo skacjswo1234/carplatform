@@ -1197,18 +1197,25 @@ body {
     font-size: 12px;
 }
 
+.review-form input[type="text"],
 .review-form input[type="number"],
 .review-form textarea {
     padding: 12px;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: 6px;
-    color: var(--text-primary);
+    color: #fff;
     font-family: inherit;
     font-size: 14px;
     transition: border-color 0.3s ease;
 }
 
+.review-form input[type="text"]::placeholder,
+.review-form textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.review-form input[type="text"]:focus,
 .review-form input[type="number"]:focus,
 .review-form textarea:focus {
     outline: none;
