@@ -1260,12 +1260,37 @@ body {
 }
 
 .image-preview .preview-item {
+    position: relative;
     flex: 0 0 auto;
     text-align: center;
     padding: 8px;
     background: var(--bg-primary);
     border-radius: 8px;
     border: 1px solid var(--border);
+}
+
+.image-preview .preview-item .preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.image-preview .preview-item .preview-remove:hover {
+    background: var(--accent, #e53935);
 }
 
 .image-preview .preview-item img {

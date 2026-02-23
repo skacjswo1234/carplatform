@@ -194,15 +194,7 @@ function initEventListeners() {
             fileUploadArea.classList.remove('drag-over');
             var files = e.dataTransfer && e.dataTransfer.files;
             if (!files || files.length === 0) return;
-            var list = [];
-            for (var i = 0; i < Math.min(files.length, MAX_REVIEW_IMAGES); i++) {
-                if (files[i].type.indexOf('image/') === 0) list.push(files[i]);
-            }
-            if (list.length === 0) return;
-            var dt = new DataTransfer();
-            list.forEach(function(f) { dt.items.add(f); });
-            reviewImagesInput.files = dt.files;
-            previewReviewImages(reviewImagesInput.files);
+            addReviewFiles(Array.prototype.slice.call(files));
         });
     }
 }
@@ -778,8 +770,13 @@ function openReviewModal(reviewId = null) {
     const form = document.getElementById('reviewForm');
     const modalTitle = document.getElementById('reviewModalTitle');
     const imagePreview = document.getElementById('imagePreview');
-    
+
     if (!modal || !form) return;
+
+    reviewCurrentFiles.forEach(function(item) {
+        if (item.type === 'file' && item._objectUrl) URL.revokeObjectURL(item._objectUrl);
+    });
+    reviewCurrentFiles = [];
 
     if (reviewId) {
         modalTitle.textContent = '고객후기 수정';
@@ -794,6 +791,7 @@ function openReviewModal(reviewId = null) {
         imagePreview.innerHTML = '';
         var imInput = document.getElementById('reviewImages');
         if (imInput) imInput.value = '';
+        renderReviewPreviews();
     }
 
     modal.classList.add('active');
@@ -815,10 +813,8 @@ async function loadReviewData(reviewId) {
                 var imgs = review.images && Array.isArray(review.images) && review.images.length > 0
                     ? review.images
                     : (review.image_url ? [review.image_url] : []);
-                var imagePreview = document.getElementById('imagePreview');
-                imagePreview.innerHTML = imgs.map(function(url, i) {
-                    return '<div class="preview-item"><img src="' + url + '" alt="미리보기 ' + (i + 1) + '" style="max-width: 100%; max-height: 120px; object-fit: contain;"><span>#' + (i + 1) + (i === 0 ? ' (대표)' : '') + '</span></div>';
-                }).join('');
+                reviewCurrentFiles = imgs.map(function(url) { return { type: 'url', url: url }; });
+                renderReviewPreviews();
             }
         }
     } catch (error) {
@@ -827,30 +823,54 @@ async function loadReviewData(reviewId) {
 }
 
 var MAX_REVIEW_IMAGES = 5;
+// 고객후기 모달에서 선택/드롭한 파일 또는 기존 URL (드래그 시 input.files 할당 불가 대비)
+var reviewCurrentFiles = []; // { type: 'file', file: File } | { type: 'url', url: string }
 
-function previewReviewImages(files) {
+function addReviewFiles(files) {
+    if (!files || files.length === 0) return;
+    for (var i = 0; i < files.length && reviewCurrentFiles.length < MAX_REVIEW_IMAGES; i++) {
+        if (files[i].type && files[i].type.indexOf('image/') === 0) {
+            reviewCurrentFiles.push({ type: 'file', file: files[i] });
+        }
+    }
+    renderReviewPreviews();
+}
+
+function removeReviewFile(index) {
+    reviewCurrentFiles.splice(index, 1);
+    renderReviewPreviews();
+}
+
+function renderReviewPreviews() {
     var imagePreview = document.getElementById('imagePreview');
     if (!imagePreview) return;
-    if (!files || files.length === 0) {
-        imagePreview.innerHTML = '';
-        return;
-    }
-    var list = [];
-    var len = Math.min(files.length, MAX_REVIEW_IMAGES);
-    for (var i = 0; i < len; i++) {
-        list.push(files[i]);
-    }
     imagePreview.innerHTML = '';
-    list.forEach(function(file, idx) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var div = document.createElement('div');
-            div.className = 'preview-item';
-            div.innerHTML = '<img src="' + e.target.result + '" alt="미리보기 ' + (idx + 1) + '" style="max-width: 100%; max-height: 120px; object-fit: contain;"><span>#' + (idx + 1) + (idx === 0 ? ' (대표)' : '') + '</span>';
-            imagePreview.appendChild(div);
-        };
-        reader.readAsDataURL(file);
+    reviewCurrentFiles.forEach(function(item, idx) {
+        var div = document.createElement('div');
+        div.className = 'preview-item';
+        var src = item.type === 'file'
+            ? (item._objectUrl || (item._objectUrl = URL.createObjectURL(item.file)))
+            : item.url;
+        var label = '#' + (idx + 1) + (idx === 0 ? ' (대표)' : '');
+        div.innerHTML =
+            '<button type="button" class="preview-remove" aria-label="이미지 삭제" data-index="' + idx + '">&times;</button>' +
+            '<img src="' + src + '" alt="미리보기 ' + (idx + 1) + '">' +
+            '<span>' + label + '</span>';
+        imagePreview.appendChild(div);
     });
+    imagePreview.querySelectorAll('.preview-remove').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var i = parseInt(this.getAttribute('data-index'), 10);
+            var item = reviewCurrentFiles[i];
+            if (item && item.type === 'file' && item._objectUrl) URL.revokeObjectURL(item._objectUrl);
+            removeReviewFile(i);
+        });
+    });
+}
+
+function previewReviewImages(files) {
+    if (!files || files.length === 0) return;
+    addReviewFiles(Array.prototype.slice.call(files));
 }
 
 async function uploadOneImage(file) {
@@ -870,40 +890,23 @@ async function uploadOneImage(file) {
 // 고객후기 저장 (이미지 1~5장)
 async function saveReview() {
     var reviewId = document.getElementById('reviewId').value;
-    var imageInput = document.getElementById('reviewImages');
     var title = document.getElementById('reviewTitle').value.trim();
     var textContent = document.getElementById('reviewText').value;
     var displayOrder = parseInt(document.getElementById('reviewOrder').value, 10) || 0;
     var isActive = document.getElementById('reviewActive').checked;
 
     var imagesArr = [];
-    if (imageInput.files && imageInput.files.length > 0) {
-        var files = Array.prototype.slice.call(imageInput.files, 0, MAX_REVIEW_IMAGES);
-        for (var i = 0; i < files.length; i++) {
-            if (files[i].size > 5 * 1024 * 1024) {
+    for (var i = 0; i < reviewCurrentFiles.length; i++) {
+        var item = reviewCurrentFiles[i];
+        if (item.type === 'file') {
+            if (item.file.size > 5 * 1024 * 1024) {
                 showMessageModal('각 이미지는 5MB 이하여야 합니다.', 'error');
                 return;
             }
-        }
-        for (var j = 0; j < files.length; j++) {
-            var url = await uploadOneImage(files[j]);
+            var url = await uploadOneImage(item.file);
             if (url) imagesArr.push(url);
-        }
-    }
-    if (imagesArr.length === 0 && reviewId) {
-        try {
-            var response = await fetch(API_BASE_URL + '/reviews');
-            var data = await response.json();
-            if (data.success && data.reviews) {
-                var review = data.reviews.find(function(r) { return r.id == reviewId; });
-                if (review) {
-                    imagesArr = review.images && Array.isArray(review.images) && review.images.length > 0
-                        ? review.images
-                        : (review.image_url ? [review.image_url] : []);
-                }
-            }
-        } catch (err) {
-            console.error(err);
+        } else if (item.type === 'url' && item.url) {
+            imagesArr.push(item.url);
         }
     }
     if (imagesArr.length === 0) {
@@ -997,7 +1000,11 @@ function closeReviewModal() {
     if (form) {
         form.reset();
     }
-    const imagePreview = document.getElementById('imagePreview');
+    reviewCurrentFiles.forEach(function(item) {
+        if (item.type === 'file' && item._objectUrl) URL.revokeObjectURL(item._objectUrl);
+    });
+    reviewCurrentFiles = [];
+    var imagePreview = document.getElementById('imagePreview');
     if (imagePreview) {
         imagePreview.innerHTML = '';
     }
