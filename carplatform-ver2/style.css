@@ -711,6 +711,28 @@ body {
     margin-top: 32px;
 }
 
+/* 포토후기 상세 페이지 */
+.photo-review-detail-page { min-height: 60vh; }
+.photo-review-detail-section { padding: 40px 0 80px; }
+.detail-loading,
+.detail-error { text-align: center; padding: 60px 20px; color: #666; font-size: 16px; }
+.detail-error { color: #c62828; }
+.detail-content { max-width: 800px; margin: 0 auto; }
+.detail-images { margin-bottom: 32px; }
+.detail-image-item { margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #f5f5f5; }
+.detail-image-item img { width: 100%; height: auto; display: block; max-height: 70vh; object-fit: contain; }
+.detail-title { font-size: 24px; font-weight: 700; color: #2c2c2c; margin: 0 0 20px; line-height: 1.4; }
+.detail-description { font-size: 15px; color: #444; line-height: 1.8; margin-bottom: 32px; white-space: pre-wrap; word-break: break-word; }
+.detail-downloads-title { font-size: 16px; font-weight: 600; margin: 0 0 12px; color: #333; }
+.detail-download-list { list-style: none; padding: 0; margin: 0 0 32px; }
+.detail-download-list li { margin-bottom: 8px; }
+.detail-download-list a { color: #d32f2f; text-decoration: none; font-size: 15px; }
+.detail-download-list a:hover { text-decoration: underline; }
+.detail-back-wrap { text-align: center; padding-top: 24px; }
+.detail-back-btn { display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #c62828 0%, #d32f2f 100%); color: #fff; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 30px; box-shadow: 0 4px 14px rgba(198, 40, 40, 0.4); transition: transform 0.2s, box-shadow 0.2s; }
+.detail-back-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(198, 40, 40, 0.45); }
+.hidden { display: none !important; }
+
 .car-card {
     background: white;
     border-radius: 10px;
@@ -1112,17 +1134,28 @@ body {
         0 0 0 1px rgba(255, 255, 255, 0.6) inset;
 }
 
+.review-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
 .review-card-image-wrap {
     flex-shrink: 0;
     overflow: hidden;
     background: #f5f5f5;
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .review-card-image {
     width: 100%;
     height: auto;
-    max-height: 260px;
-    object-fit: contain;
+    min-height: 280px;
+    max-height: 420px;
+    object-fit: cover;
     display: block;
 }
 
@@ -1646,9 +1679,10 @@ body {
     }
 
     .review-card .review-card-image {
-        height: auto;
-        max-height: 220px;
+        min-height: 200px;
+        max-height: 280px;
     }
+    .review-card-image-wrap { min-height: 200px; }
 
     .review-card .review-card-product-content {
         padding: 0;
@@ -1726,9 +1760,10 @@ body {
     }
 
     .review-card .review-card-image {
-        height: auto;
-        max-height: 240px;
+        min-height: 180px;
+        max-height: 260px;
     }
+    .review-card-image-wrap { min-height: 180px; }
 
     .review-card .review-card-product-content,
     .review-text {

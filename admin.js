@@ -167,10 +167,10 @@ function initEventListeners() {
         });
     }
 
-    const reviewImageInput = document.getElementById('reviewImage');
-    if (reviewImageInput) {
-        reviewImageInput.addEventListener('change', function(e) {
-            previewImage(e.target.files[0]);
+    const reviewImagesInput = document.getElementById('reviewImages');
+    if (reviewImagesInput) {
+        reviewImagesInput.addEventListener('change', function(e) {
+            previewReviewImages(e.target.files);
         });
     }
 }
@@ -718,25 +718,26 @@ function renderReviews(reviews) {
         return;
     }
 
-    reviewsList.innerHTML = reviews.map(review => `
-        <div class="review-item" data-id="${review.id}">
-            <div class="review-image">
-                <img src="${review.image_url}" alt="고객후기 이미지" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E이미지 없음%3C/text%3E%3C/svg%3E'">
-            </div>
-            <div class="review-content">
-                <div class="review-title">${review.title ? review.title : '(타이틀 없음)'}</div>
-                <div class="review-text">${review.text_content || '(설명 없음)'}</div>
-                <div class="review-meta">
-                    <span>순서: ${review.display_order}</span>
-                    <span class="status ${review.is_active ? 'active' : 'inactive'}">${review.is_active ? '활성' : '비활성'}</span>
-                </div>
-            </div>
-            <div class="review-actions">
-                <button class="btn-small btn-primary" onclick="editReview(${review.id})">수정</button>
-                <button class="btn-small btn-danger" onclick="deleteReview(${review.id})">삭제</button>
-            </div>
-        </div>
-    `).join('');
+    reviewsList.innerHTML = reviews.map(function(review) {
+        var imgUrl = (review.images && review.images[0]) || review.image_url || '';
+        return '<div class="review-item" data-id="' + review.id + '">' +
+            '<div class="review-image">' +
+            '<img src="' + imgUrl + '" alt="고객후기 이미지" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E이미지 없음%3C/text%3E%3C/svg%3E\'">' +
+            '</div>' +
+            '<div class="review-content">' +
+                '<div class="review-title">' + (review.title || '(타이틀 없음)') + '</div>' +
+                '<div class="review-text">' + (review.text_content || '(설명 없음)') + '</div>' +
+                '<div class="review-meta">' +
+                    '<span>순서: ' + review.display_order + '</span>' +
+                    '<span class="status ' + (review.is_active ? 'active' : 'inactive') + '">' + (review.is_active ? '활성' : '비활성') + '</span>' +
+                '</div>' +
+            '</div>' +
+            '<div class="review-actions">' +
+                '<button class="btn-small btn-primary" onclick="editReview(' + review.id + ')">수정</button>' +
+                '<button class="btn-small btn-danger" onclick="deleteReview(' + review.id + ')">삭제</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
 }
 
 // 고객후기 모달 열기
@@ -759,6 +760,8 @@ function openReviewModal(reviewId = null) {
         document.getElementById('reviewTitle').value = '';
         document.getElementById('reviewText').value = '';
         imagePreview.innerHTML = '';
+        var imInput = document.getElementById('reviewImages');
+        if (imInput) imInput.value = '';
     }
 
     modal.classList.add('active');
@@ -777,9 +780,13 @@ async function loadReviewData(reviewId) {
                 document.getElementById('reviewText').value = review.text_content || '';
                 document.getElementById('reviewOrder').value = review.display_order || 0;
                 document.getElementById('reviewActive').checked = review.is_active === 1;
-                
-                const imagePreview = document.getElementById('imagePreview');
-                imagePreview.innerHTML = `<img src="${review.image_url}" alt="미리보기" style="max-width: 100%; max-height: 200px;">`;
+                var imgs = review.images && Array.isArray(review.images) && review.images.length > 0
+                    ? review.images
+                    : (review.image_url ? [review.image_url] : []);
+                var imagePreview = document.getElementById('imagePreview');
+                imagePreview.innerHTML = imgs.map(function(url, i) {
+                    return '<div class="preview-item"><img src="' + url + '" alt="미리보기 ' + (i + 1) + '" style="max-width: 100%; max-height: 120px; object-fit: contain;"><span>#' + (i + 1) + (i === 0 ? ' (대표)' : '') + '</span></div>';
+                }).join('');
             }
         }
     } catch (error) {
@@ -787,95 +794,99 @@ async function loadReviewData(reviewId) {
     }
 }
 
-// 이미지 미리보기
-function previewImage(file) {
-    const imagePreview = document.getElementById('imagePreview');
-    if (!imagePreview || !file) return;
+var MAX_REVIEW_IMAGES = 5;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        imagePreview.innerHTML = `<img src="${e.target.result}" alt="미리보기" style="max-width: 100%; max-height: 200px;">`;
-    };
-    reader.readAsDataURL(file);
+function previewReviewImages(files) {
+    var imagePreview = document.getElementById('imagePreview');
+    if (!imagePreview) return;
+    if (!files || files.length === 0) {
+        imagePreview.innerHTML = '';
+        return;
+    }
+    var list = [];
+    var len = Math.min(files.length, MAX_REVIEW_IMAGES);
+    for (var i = 0; i < len; i++) {
+        list.push(files[i]);
+    }
+    imagePreview.innerHTML = '';
+    list.forEach(function(file, idx) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var div = document.createElement('div');
+            div.className = 'preview-item';
+            div.innerHTML = '<img src="' + e.target.result + '" alt="미리보기 ' + (idx + 1) + '" style="max-width: 100%; max-height: 120px; object-fit: contain;"><span>#' + (idx + 1) + (idx === 0 ? ' (대표)' : '') + '</span>';
+            imagePreview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
-// 고객후기 저장
+async function uploadOneImage(file) {
+    if (file.size > 5 * 1024 * 1024) return null;
+    try {
+        var form = new FormData();
+        form.append('image', file);
+        var res = await fetch(API_BASE_URL + '/upload-image', { method: 'POST', body: form });
+        var data = await res.json();
+        if (data.success) return data.url;
+        return await fileToBase64(file);
+    } catch (e) {
+        return await fileToBase64(file);
+    }
+}
+
+// 고객후기 저장 (이미지 1~5장)
 async function saveReview() {
-    const form = document.getElementById('reviewForm');
-    const reviewId = document.getElementById('reviewId').value;
-    const imageInput = document.getElementById('reviewImage');
-    const title = document.getElementById('reviewTitle').value.trim();
-    const textContent = document.getElementById('reviewText').value;
-    const displayOrder = parseInt(document.getElementById('reviewOrder').value) || 0;
-    const isActive = document.getElementById('reviewActive').checked;
+    var reviewId = document.getElementById('reviewId').value;
+    var imageInput = document.getElementById('reviewImages');
+    var title = document.getElementById('reviewTitle').value.trim();
+    var textContent = document.getElementById('reviewText').value;
+    var displayOrder = parseInt(document.getElementById('reviewOrder').value, 10) || 0;
+    var isActive = document.getElementById('reviewActive').checked;
 
-    // 이미지 처리
-    let imageUrl = '';
-    
-    if (imageInput.files && imageInput.files[0]) {
-        // 새 이미지가 선택된 경우 업로드
-        const file = imageInput.files[0];
-        
-        // 파일 크기 체크 (5MB 제한)
-        if (file.size > 5 * 1024 * 1024) {
-            showMessageModal('이미지 크기는 5MB 이하여야 합니다.', 'error');
-            return;
-        }
-
-        // R2에 업로드 시도, 실패하면 Base64 사용
-        try {
-            const uploadFormData = new FormData();
-            uploadFormData.append('image', file);
-            
-            const uploadResponse = await fetch(`${API_BASE_URL}/upload-image`, {
-                method: 'POST',
-                body: uploadFormData,
-            });
-
-            const uploadData = await uploadResponse.json();
-            
-            if (uploadData.success) {
-                imageUrl = uploadData.url;
-            } else {
-                // R2 업로드 실패 시 Base64로 폴백
-                console.warn('R2 업로드 실패, Base64 사용:', uploadData.error);
-                imageUrl = await fileToBase64(file);
+    var imagesArr = [];
+    if (imageInput.files && imageInput.files.length > 0) {
+        var files = Array.prototype.slice.call(imageInput.files, 0, MAX_REVIEW_IMAGES);
+        for (var i = 0; i < files.length; i++) {
+            if (files[i].size > 5 * 1024 * 1024) {
+                showMessageModal('각 이미지는 5MB 이하여야 합니다.', 'error');
+                return;
             }
-        } catch (error) {
-            // 업로드 API 오류 시 Base64로 폴백
-            console.warn('이미지 업로드 오류, Base64 사용:', error);
-            imageUrl = await fileToBase64(file);
         }
-    } else if (reviewId) {
-        // 수정 모드이고 새 이미지가 없으면 기존 이미지 URL 가져오기
-        try {
-            const response = await fetch(`${API_BASE_URL}/reviews`);
-            const data = await response.json();
-            if (data.success && data.reviews) {
-                const review = data.reviews.find(r => r.id == reviewId);
-                if (review) {
-                    imageUrl = review.image_url;
-                }
-            }
-        } catch (error) {
-            console.error('Error loading existing image:', error);
+        for (var j = 0; j < files.length; j++) {
+            var url = await uploadOneImage(files[j]);
+            if (url) imagesArr.push(url);
         }
     }
-
-    if (!imageUrl) {
-        showMessageModal('이미지를 선택해주세요.', 'error');
+    if (imagesArr.length === 0 && reviewId) {
+        try {
+            var response = await fetch(API_BASE_URL + '/reviews');
+            var data = await response.json();
+            if (data.success && data.reviews) {
+                var review = data.reviews.find(function(r) { return r.id == reviewId; });
+                if (review) {
+                    imagesArr = review.images && Array.isArray(review.images) && review.images.length > 0
+                        ? review.images
+                        : (review.image_url ? [review.image_url] : []);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    if (imagesArr.length === 0) {
+        showMessageModal('이미지를 1장 이상 선택해주세요.', 'error');
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/reviews`, {
+        var response = await fetch(API_BASE_URL + '/reviews', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 id: reviewId || null,
-                image_url: imageUrl,
+                image_url: imagesArr[0],
+                images: imagesArr,
                 title: title || null,
                 text_content: textContent,
                 display_order: displayOrder,
@@ -883,8 +894,7 @@ async function saveReview() {
             }),
         });
 
-        const data = await response.json();
-
+        var data = await response.json();
         if (data.success) {
             showMessageModal(reviewId ? '고객후기가 수정되었습니다.' : '고객후기가 추가되었습니다.', 'success');
             closeReviewModal();

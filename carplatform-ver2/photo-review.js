@@ -12,15 +12,23 @@
         } catch (_) { return ''; }
     }
 
+    function getReviewMainImage(review) {
+        if (review.images && Array.isArray(review.images) && review.images.length > 0) return review.images[0];
+        return review.image_url || '';
+    }
+
     function createReviewCard(review) {
         if (!review) return '';
+        var mainImg = getReviewMainImage(review);
         var text = review.text_content ? review.text_content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
         var titleStr = review.title ? review.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
         var detailTitle = titleStr || (text ? (text.length > 40 ? text.slice(0, 40) + '…' : text) : '고객 후기');
         var dateStr = formatReviewDate(review.created_at);
-        return '<article class="review-card">' +
+        var detailUrl = 'photo-review-detail.html?id=' + encodeURIComponent(review.id);
+        return '<a href="' + detailUrl + '" class="review-card-link">' +
+            '<article class="review-card">' +
             '<div class="review-card-image-wrap">' +
-            '<img src="' + (review.image_url || '') + '" alt="고객후기 대표이미지" class="review-card-image" onerror="this.style.display=\'none\'">' +
+            '<img src="' + mainImg + '" alt="고객후기 대표이미지" class="review-card-image" onerror="this.style.display=\'none\'">' +
             '</div>' +
             '<p class="review-card-click-msg">사진을 클릭하시면 상세내역을 보실 수 있습니다. 클릭♥</p>' +
             '<h3 class="review-card-title">' + detailTitle + '</h3>' +
@@ -29,7 +37,8 @@
             '<span class="review-card-product-label">상품정보&gt;</span>' +
             '<div class="review-card-product-content">' + (text || '-') + '</div>' +
             '</div>' +
-            '</article>';
+            '</article>' +
+            '</a>';
     }
 
     var PER_PAGE = 20;

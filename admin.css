@@ -1245,6 +1245,35 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+.image-preview.multi-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.image-preview .preview-item {
+    flex: 0 0 auto;
+    text-align: center;
+    padding: 8px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.image-preview .preview-item img {
+    max-height: 120px;
+    display: block;
+    margin: 0 auto 4px;
+}
+
+.image-preview .preview-item span {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
 /* Toggle Switch */
 .toggle-switch {
     display: flex;
