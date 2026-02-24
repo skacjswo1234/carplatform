@@ -1198,6 +1198,7 @@ body {
     min-height: 2.8em;
     background: #f5f5f5;
     border-top: 1px solid #eee;
+    box-sizing: border-box;
 }
 
 .review-card-meta {
@@ -1233,6 +1234,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     min-height: 4.8em;
+    box-sizing: border-box;
 }
 
 .review-text {
@@ -1725,6 +1727,7 @@ body {
         gap: 24px;
     }
 
+    /* 고객후기 카드: 모바일에서 크기 완전 통일 (제목 1줄+..., 상품정보 3줄 고정+...) */
     .review-card .review-card-image {
         height: 200px;
         min-height: 200px;
@@ -1736,14 +1739,28 @@ body {
         height: 200px;
     }
 
+    .review-card .review-card-title {
+        -webkit-line-clamp: 1;
+        height: 2.9em;
+        min-height: 2.9em;
+        max-height: 2.9em;
+        line-height: 1.4;
+        flex-shrink: 0;
+    }
+
+    .review-card .review-card-product {
+        flex-shrink: 0;
+    }
+
     .review-card .review-card-product-content {
         padding: 0;
         font-size: 13px;
-        min-height: 4.2em;
-    }
-
-    .review-card .review-card-title {
-        min-height: 2.8em;
+        line-height: 1.5;
+        -webkit-line-clamp: 3;
+        height: 4.5em;
+        min-height: 4.5em;
+        max-height: 4.5em;
+        flex-shrink: 0;
     }
 
     .footer-content {
@@ -1827,16 +1844,30 @@ body {
         height: 180px;
     }
 
+    .review-card .review-card-title {
+        -webkit-line-clamp: 1;
+        height: 2.9em;
+        min-height: 2.9em;
+        max-height: 2.9em;
+        flex-shrink: 0;
+    }
+
+    .review-card .review-card-product {
+        flex-shrink: 0;
+    }
+
     .review-card .review-card-product-content,
     .review-text {
         font-size: 13px;
         line-height: 1.65;
     }
     .review-card .review-card-product-content {
-        min-height: 4.2em;
-    }
-    .review-card .review-card-title {
-        min-height: 2.8em;
+        -webkit-line-clamp: 3;
+        height: 4.5em;
+        min-height: 4.5em;
+        max-height: 4.5em;
+        line-height: 1.5;
+        flex-shrink: 0;
     }
 
     .h-10-subtitle {
