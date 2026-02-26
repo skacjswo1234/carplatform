@@ -1194,11 +1194,11 @@ body {
     border-top: 1px solid #eee;
     box-sizing: border-box;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-height: 2.8em;
+    min-height: 1.4em;
 }
 
 .review-card-meta {
