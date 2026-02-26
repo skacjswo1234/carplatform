@@ -22,7 +22,8 @@
         var mainImg = getReviewMainImage(review);
         var text = review.text_content ? review.text_content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
         var titleStr = review.title ? review.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-        var detailTitle = titleStr || (text ? (text.length > 40 ? text.slice(0, 40) + '…' : text) : '고객 후기');
+        var rawTitle = titleStr || (text ? text : '고객 후기');
+        var detailTitle = rawTitle.length > 7 ? rawTitle.slice(0, 7) + '…' : rawTitle;
         var dateStr = formatReviewDate(review.created_at);
         var detailUrl = 'photo-review-detail.html?id=' + encodeURIComponent(review.id);
         return '<a href="' + detailUrl + '" class="review-card-link">' +

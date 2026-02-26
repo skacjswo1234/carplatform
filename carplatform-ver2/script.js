@@ -471,7 +471,8 @@ function createReviewCard(review) {
     const mainImg = getReviewMainImage(review);
     const text = review.text_content ? review.text_content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
     const titleStr = review.title ? review.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-    const detailTitle = titleStr || (text ? (text.length > 40 ? text.slice(0, 40) + '…' : text) : '고객 후기');
+    const rawTitle = titleStr || (text ? text : '고객 후기');
+    const detailTitle = rawTitle.length > 7 ? rawTitle.slice(0, 7) + '…' : rawTitle;
     const dateStr = formatReviewDate(review.created_at);
     const detailUrl = 'photo-review-detail.html?id=' + encodeURIComponent(review.id);
     return `
