@@ -1193,12 +1193,12 @@ body {
     background: #f5f5f5;
     border-top: 1px solid #eee;
     box-sizing: border-box;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-height: 1.4em;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
 }
 
 .review-card-meta {
