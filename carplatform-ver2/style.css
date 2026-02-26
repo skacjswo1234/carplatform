@@ -1202,6 +1202,19 @@ body {
     flex-shrink: 0;
 }
 
+.review-card-title-mobile { display: none; }
+.review-card-title-pc { display: inline; }
+
+@media (max-width: 768px) {
+    .review-card-title-pc { display: none; }
+    .review-card-title-mobile { display: inline; }
+}
+
+@media (min-width: 769px) {
+    .review-card-title-pc { display: inline; }
+    .review-card-title-mobile { display: none; }
+}
+
 .review-card-meta {
     margin: 0 16px 12px;
     font-size: 13px;

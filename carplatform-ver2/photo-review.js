@@ -23,7 +23,8 @@
         var text = review.text_content ? review.text_content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
         var titleStr = review.title ? review.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
         var rawTitle = titleStr || (text ? text : '고객 후기');
-        var detailTitle = rawTitle.length > 7 ? rawTitle.slice(0, 7) + '…' : rawTitle;
+        var titlePc = rawTitle.length > 10 ? rawTitle.slice(0, 10) + '…' : rawTitle;
+        var titleMobile = rawTitle.length > 7 ? rawTitle.slice(0, 7) + '…' : rawTitle;
         var dateStr = formatReviewDate(review.created_at);
         var detailUrl = 'photo-review-detail.html?id=' + encodeURIComponent(review.id);
         return '<a href="' + detailUrl + '" class="review-card-link">' +
@@ -32,7 +33,10 @@
             '<img src="' + mainImg + '" alt="고객후기 대표이미지" class="review-card-image" onerror="this.style.display=\'none\'">' +
             '</div>' +
             '<p class="review-card-click-msg">사진을 클릭하시면 상세내역을 보실 수 있습니다. 클릭♥</p>' +
-            '<h3 class="review-card-title">' + detailTitle + '</h3>' +
+            '<h3 class="review-card-title">' +
+            '<span class="review-card-title-pc">' + titlePc + '</span>' +
+            '<span class="review-card-title-mobile">' + titleMobile + '</span>' +
+            '</h3>' +
             '<p class="review-card-meta">카플랫폼 ' + (dateStr ? '| ' + dateStr : '') + '</p>' +
             '<div class="review-card-product">' +
             '<span class="review-card-product-label">상품정보&gt;</span>' +
