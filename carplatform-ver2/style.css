@@ -1753,7 +1753,7 @@ body {
         height: 200px;
         min-height: 200px;
         max-height: 200px;
-        object-fit: cover;
+        object-fit: contain;
     }
     .review-card-image-wrap {
         min-height: 200px;
@@ -1858,7 +1858,7 @@ body {
         height: 180px;
         min-height: 180px;
         max-height: 180px;
-        object-fit: cover;
+        object-fit: contain;
     }
     .review-card-image-wrap {
         min-height: 180px;
