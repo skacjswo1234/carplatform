@@ -1,13 +1,22 @@
 // 포토후기 전용: 20개씩 페이징 (PC 5x4, 모바일 2x10)
 (function () {
+    // API의 created_at은 KST('YYYY-MM-DD HH:mm:ss') → KST로 해석해 표시
     function formatReviewDate(createdAt) {
         if (!createdAt) return '';
         try {
-            var d = new Date(createdAt);
+            var dateStr = String(createdAt).trim();
+            if (!/^\d{4}-\d{2}-\d{2}/.test(dateStr)) return '';
+            if (dateStr.indexOf('T') !== -1 && dateStr.indexOf('Z') !== -1) {
+                var d = new Date(dateStr);
+                if (isNaN(d.getTime())) return '';
+                var kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+                var y = kst.getUTCFullYear(), m = String(kst.getUTCMonth() + 1).padStart(2, '0'), day = String(kst.getUTCDate()).padStart(2, '0');
+                return y + '.' + m + '.' + day;
+            }
+            var asKst = dateStr.replace(' ', 'T') + (dateStr.length <= 10 ? 'T00:00:00' : '') + '+09:00';
+            var d = new Date(asKst);
             if (isNaN(d.getTime())) return '';
-            var y = d.getFullYear();
-            var m = String(d.getMonth() + 1).padStart(2, '0');
-            var day = String(d.getDate()).padStart(2, '0');
+            var y = d.getUTCFullYear(), m = String(d.getUTCMonth() + 1).padStart(2, '0'), day = String(d.getUTCDate()).padStart(2, '0');
             return y + '.' + m + '.' + day;
         } catch (_) { return ''; }
     }
