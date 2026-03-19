@@ -478,9 +478,13 @@ async function nextButton() {
 
 // Apps Script 웹앱 URL (직접 호출)
 const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw6eG32DIJ_yjjhNJTh9UQDP8nk1cF2QFrZZulq6WDLS9doMO9dfR6uB7IryhZwBZ9Y/exec';
+if (typeof console !== 'undefined' && console.log) {
+    console.log('[카플랫폼] script.js 로드됨, Apps Script 연동 URL:', APPS_SCRIPT_WEB_APP_URL ? '설정됨' : '미설정');
+}
 
 async function sendInquiryToAppsScript(formData) {
     if (!APPS_SCRIPT_WEB_APP_URL) return;
+    console.log('[카플랫폼] Apps Script로 문의 데이터 전송 시도');
 
     const params = new URLSearchParams();
     Object.entries(formData).forEach(([key, value]) => {
@@ -494,6 +498,7 @@ async function sendInquiryToAppsScript(formData) {
         mode: 'no-cors',
         body: params,
     });
+    console.log('[카플랫폼] Apps Script 전송 요청 완료 (no-cors)');
 }
 
 // IP 주소 가져오기 (Cloudflare의 CF-Connecting-IP 헤더 사용)
@@ -639,6 +644,9 @@ function showCompletionModal() {
             'value': 1.0,
             'currency': 'KRW'
         });
+        console.log('[카플랫폼] Google 전환 이벤트 전송됨 (AW-729683917/zo3DCL6ooZMbEM2v-NsC)');
+    } else {
+        console.warn('[카플랫폼] gtag 미로드 - 전환 이벤트 미전송');
     }
     
     // 모달 표시
