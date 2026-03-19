@@ -632,6 +632,15 @@ function showCompletionModal() {
     
     if (!modal) return;
     
+    // 문의 전환: 상담 완료 시점에만 전환 이벤트 전송
+    if (typeof gtag === 'function') {
+        gtag('event', 'conversion', {
+            'send_to': 'AW-729683917/zo3DCL6ooZMbEM2v-NsC',
+            'value': 1.0,
+            'currency': 'KRW'
+        });
+    }
+    
     // 모달 표시
     modal.classList.remove('hidden');
     
