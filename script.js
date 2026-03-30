@@ -648,6 +648,24 @@ function showCompletionModal() {
     } else {
         console.warn('[카플랫폼] gtag 미로드 - 전환 이벤트 미전송');
     }
+
+    // TikTok 전환: CompleteRegistration (문의 완료)
+    if (typeof window.ttq !== 'undefined' && typeof window.ttq.track === 'function') {
+        window.ttq.track('CompleteRegistration', {
+            contents: [
+                {
+                    content_id: 'carplatform-inquiry',
+                    content_type: 'product',
+                    content_name: '카플랫폼 최저가 견적 문의'
+                }
+            ],
+            value: 1,
+            currency: 'KRW'
+        });
+        console.log('[카플랫폼] TikTok CompleteRegistration 전송됨');
+    } else {
+        console.warn('[카플랫폼] TikTok ttq 미로드 - CompleteRegistration 미전송');
+    }
     
     // 모달 표시
     modal.classList.remove('hidden');
