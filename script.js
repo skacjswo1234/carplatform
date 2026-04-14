@@ -666,6 +666,17 @@ function showCompletionModal() {
     } else {
         console.warn('[카플랫폼] TikTok ttq 미로드 - CompleteRegistration 미전송');
     }
+
+    // NAVER WCS 전환: 신청완료(lead)
+    if (typeof window.wcs !== 'undefined' && window.wcs) {
+        if (!window.wcs_add) window.wcs_add = {};
+        window.wcs_add['wa'] = 's_511b45735820';
+        var _naverConv = { type: 'lead' };
+        window.wcs.trans(_naverConv);
+        console.log('[카플랫폼] NAVER WCS lead 전환 전송됨');
+    } else {
+        console.warn('[카플랫폼] NAVER wcs 미로드 - lead 전환 미전송');
+    }
     
     // 모달 표시
     modal.classList.remove('hidden');
