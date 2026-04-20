@@ -482,10 +482,13 @@ body.is-loading {
     clip: rect(0, 0, 0, 0);
 }
 
-/* STEP 04, 05, 06 - 입력 필드 */
-.step04-inner input,
-.step05-inner input,
-.step06-inner input {
+/* STEP 04, 05, 06 - 입력 필드 (부모 color:inherit 대비: 흰 배경 + 검정 글자) */
+.step04-inner input[type="text"],
+.step04-inner input[type="tel"],
+.step05-inner input[type="text"],
+.step05-inner input[type="tel"],
+.step06-inner input[type="text"],
+.step06-inner input[type="tel"] {
     width: 100%;
     padding: 15px;
     border: 2px solid #e0e0e0;
@@ -493,18 +496,46 @@ body.is-loading {
     font-size: 16px;
     margin-bottom: 15px;
     transition: border-color 0.3s;
+    color: #111;
+    background-color: #fff;
+    caret-color: #111;
 }
 
-.step04-inner input:focus,
-.step05-inner input:focus,
-.step06-inner input:focus {
+.step04-inner input[type="text"]::placeholder,
+.step04-inner input[type="tel"]::placeholder,
+.step05-inner input[type="text"]::placeholder,
+.step05-inner input[type="tel"]::placeholder,
+.step06-inner input[type="text"]::placeholder,
+.step06-inner input[type="tel"]::placeholder {
+    color: #888;
+}
+
+.step04-inner input[type="text"]:-webkit-autofill,
+.step04-inner input[type="tel"]:-webkit-autofill,
+.step05-inner input[type="text"]:-webkit-autofill,
+.step05-inner input[type="tel"]:-webkit-autofill,
+.step06-inner input[type="text"]:-webkit-autofill,
+.step06-inner input[type="tel"]:-webkit-autofill {
+    -webkit-text-fill-color: #111;
+    box-shadow: 0 0 0 1000px #fff inset;
+}
+
+.step04-inner input[type="text"]:focus,
+.step04-inner input[type="tel"]:focus,
+.step05-inner input[type="text"]:focus,
+.step05-inner input[type="tel"]:focus,
+.step06-inner input[type="text"]:focus,
+.step06-inner input[type="tel"]:focus {
     outline: none;
     border-color: #ff4444;
 }
 
-.step04-inner input.error,
-.step05-inner input.error,
-.step06-inner input.error {
+.step04-inner input[type="text"].error,
+.step04-inner input[type="tel"].error,
+.step05-inner input[type="text"].error,
+.step05-inner input[type="tel"].error,
+.step06-inner input[type="text"].error,
+.step06-inner input[type="tel"].error {
     border-color: #ff0000;
     background-color: #fff5f5;
 }
@@ -520,7 +551,8 @@ body.is-loading {
     background-color: #fff5f5;
 }
 
-.step05-inner input {
+.step05-inner input[type="text"],
+.step05-inner input[type="tel"] {
     margin-bottom: 15px;
 }
 
@@ -1278,20 +1310,28 @@ body.is-loading {
         color: #fff;
     }
     
-    .step04-inner input,
-    .step05-inner input,
-    .step06-inner input {
+    .step04-inner input[type="text"],
+    .step04-inner input[type="tel"],
+    .step05-inner input[type="text"],
+    .step05-inner input[type="tel"],
+    .step06-inner input[type="text"],
+    .step06-inner input[type="tel"] {
         padding: 15px 14px;
         font-size: 16px;
         margin-bottom: 12px;
-        background: #1a1a1e;
+        background: #fff;
         border: 2px solid #3a3a42;
-        color: #f5f5f5;
+        color: #111;
+        caret-color: #111;
     }
 
-    .step04-inner input::placeholder,
-    .step05-inner input::placeholder {
-        color: #777;
+    .step04-inner input[type="text"]::placeholder,
+    .step04-inner input[type="tel"]::placeholder,
+    .step05-inner input[type="text"]::placeholder,
+    .step05-inner input[type="tel"]::placeholder,
+    .step06-inner input[type="text"]::placeholder,
+    .step06-inner input[type="tel"]::placeholder {
+        color: #888;
     }
     
     .info_agree {
@@ -1313,10 +1353,13 @@ body.is-loading {
         color: #ff8a7a;
     }
 
-    .step04-inner input.error,
-    .step05-inner input.error,
-    .step06-inner input.error {
-        background-color: rgba(255, 60, 60, 0.12);
+    .step04-inner input[type="text"].error,
+    .step04-inner input[type="tel"].error,
+    .step05-inner input[type="text"].error,
+    .step05-inner input[type="tel"].error,
+    .step06-inner input[type="text"].error,
+    .step06-inner input[type="tel"].error {
+        background-color: #fff5f5;
     }
 
     .step02-inner input[type="radio"]:not(:checked) + label.error,
