@@ -15,6 +15,20 @@ function sanitizeInput(value) {
   return value.trim();
 }
 
+const BANNED_WORDS = ['씨발', '시발', '병신', '좆', '존나', '개새끼', '미친놈', '미친년', '섹스', '보지', '자지', '걸레', '창녀'];
+
+function isInvalidName(name) {
+  if (!name || name.length < 2) return true;
+  // 자음/모음만 입력한 경우 차단 (예: ㄱㄱ, ㅏㅏ)
+  if (/^[ㄱ-ㅎㅏ-ㅣ]+$/.test(name)) return true;
+  return false;
+}
+
+function hasBannedWord(text) {
+  if (!text) return false;
+  return BANNED_WORDS.some((word) => text.includes(word));
+}
+
 // IP 주소 가져오기 (Cloudflare의 CF-Connecting-IP 헤더 사용)
 function getClientIP(request) {
   // Cloudflare의 실제 클라이언트 IP 헤더
@@ -220,12 +234,38 @@ export async function onRequestPost(context) {
       });
     }
 
-    // 전화번호 숫자만 허용 검증
-    const phoneNumber = phone.replace(/[^0-9]/g, '');
-    if (!/^[0-9]{10,11}$/.test(phoneNumber)) {
+    if (isInvalidName(sanitizedName)) {
       return new Response(JSON.stringify({
         success: false,
-        error: '올바른 연락처를 입력해주세요. (숫자만 입력, 10-11자리)'
+        error: '성함은 2글자 이상 정확히 입력해주세요. (자음/모음만 입력 불가)'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    if (hasBannedWord(sanitizedName)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: '성함에 부적절한 단어가 포함되어 있습니다.'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    // 전화번호 숫자만 허용 검증
+    const phoneNumber = phone.replace(/[^0-9]/g, '');
+    if (!/^[0-9]{11}$/.test(phoneNumber)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: '올바른 연락처를 입력해주세요. (숫자만 입력, 11자리)'
       }), {
         status: 400,
         headers: {

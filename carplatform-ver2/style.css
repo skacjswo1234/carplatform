@@ -489,6 +489,15 @@ body {
     height: auto;
 }
 
+.form-warning-message {
+    margin: 8px 0 0;
+    color: #c62828;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.45;
+    text-align: center;
+}
+
 /* h-4 섹션 */
 .h-4-section {
     position: relative;

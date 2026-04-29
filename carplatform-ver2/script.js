@@ -15,6 +15,20 @@ function sanitizeInput(value) {
     return value.trim();
 }
 
+const BANNED_WORDS = ['씨발', '시발', '병신', '좆', '존나', '개새끼', '미친놈', '미친년', '섹스', '보지', '자지', '걸레', '창녀'];
+
+function isInvalidName(name) {
+    if (!name || name.length < 2) return true;
+    // 자음/모음만 입력한 경우 차단 (예: ㄱㄱ, ㅏㅏ)
+    if (/^[ㄱ-ㅎㅏ-ㅣ]+$/.test(name)) return true;
+    return false;
+}
+
+function hasBannedWord(text) {
+    if (!text) return false;
+    return BANNED_WORDS.some((word) => text.includes(word));
+}
+
 // IP 주소 가져오기
 async function getClientIP() {
     try {
@@ -128,11 +142,21 @@ async function saveInquiry(name, phone, carName) {
         showAlertModal('입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.\n다시 입력해주세요.');
         return false;
     }
+
+    if (isInvalidName(sanitizedName)) {
+        showAlertModal('성함은 2글자 이상 정확히 입력해주세요.\n(자음/모음만 입력 불가)');
+        return false;
+    }
+
+    if (hasBannedWord(sanitizedName)) {
+        showAlertModal('성함에 부적절한 단어가 포함되어 있습니다.\n다시 입력해주세요.');
+        return false;
+    }
     
     // 전화번호 숫자만 허용 검증
     const phoneNumber = phone.replace(/[^0-9]/g, '');
-    if (!/^[0-9]{10,11}$/.test(phoneNumber)) {
-        showAlertModal('올바른 연락처를 입력해주세요.\n(숫자만 입력, 10-11자리)');
+    if (!/^[0-9]{11}$/.test(phoneNumber)) {
+        showAlertModal('올바른 연락처를 입력해주세요.\n(숫자만 입력, 11자리)');
         return false;
     }
     
@@ -598,9 +622,22 @@ function initForms() {
                 return;
             }
             
-            if (name.length < 2) {
-                showAlert('성함을 정확히 입력해주세요.');
+            if (isInvalidName(name)) {
+                showAlert('성함은 2글자 이상 정확히 입력해주세요.\n(자음/모음만 입력 불가)');
                 nameInput.focus();
+                return;
+            }
+
+            if (hasBannedWord(name)) {
+                showAlert('성함에 부적절한 단어가 포함되어 있습니다.\n다시 입력해주세요.');
+                nameInput.focus();
+                return;
+            }
+
+            const phoneNumber = phone.replace(/[^0-9]/g, '');
+            if (!/^[0-9]{11}$/.test(phoneNumber)) {
+                showAlert('연락처는 숫자 11자리로 입력해주세요.');
+                phoneInput.focus();
                 return;
             }
             
@@ -732,9 +769,22 @@ function initMiniConsultation() {
                 return;
             }
             
-            if (name.length < 2) {
-                showAlert('성함을 정확히 입력해주세요.');
+            if (isInvalidName(name)) {
+                showAlert('성함은 2글자 이상 정확히 입력해주세요.\n(자음/모음만 입력 불가)');
                 nameInput.focus();
+                return;
+            }
+
+            if (hasBannedWord(name)) {
+                showAlert('성함에 부적절한 단어가 포함되어 있습니다.\n다시 입력해주세요.');
+                nameInput.focus();
+                return;
+            }
+
+            const phoneNumber = phone.replace(/[^0-9]/g, '');
+            if (!/^[0-9]{11}$/.test(phoneNumber)) {
+                showAlert('연락처는 숫자 11자리로 입력해주세요.');
+                phoneInput.focus();
                 return;
             }
             
