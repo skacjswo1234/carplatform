@@ -430,6 +430,8 @@ async function nextButton() {
 
         let success = false;
         try {
+            // AceCounter: 마지막 submit 직전(이름/연락처 validation 통과 후) 가상 페이지 수집
+            try { AM_PL('/FormSubmit'); } catch (e) {}
             // 데이터 저장 (IP 제한 포함)
             success = await saveInquiry();
         } finally {
