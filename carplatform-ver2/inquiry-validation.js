@@ -72,19 +72,21 @@
   }
 
   function isInvalidName(name) {
-    if (!name || String(name).length < 2) return true;
-    if (isJamoOnly(name)) return true;
-    if (textHasBlockedDigitRuns(name)) return true;
+  const normalized = String(name || '').trim();
+  if (!normalized || normalized.length < 2) return true;
+  if (isJamoOnly(normalized)) return true;
+  if (textHasBlockedDigitRuns(normalized)) return true;
     return false;
   }
 
   /** 차종: 2글자 이상, 한글 자모만/숫자만 문자열·연속숫자 패턴 차단 (금칙어는 별도 hasBannedWord) */
   function isInvalidCarNameText(text) {
-    if (!text || String(text).length < 2) return true;
-    if (isJamoOnly(text)) return true;
-    if (/^\d+$/.test(String(text))) return true;
-    if (textHasBlockedDigitRuns(text)) return true;
-    if (isPlaceholderCarName(text)) return true;
+  const normalized = String(text || '').trim();
+  if (!normalized || normalized.length < 2) return true;
+  if (isJamoOnly(normalized)) return true;
+  if (/^\d+$/.test(normalized)) return true;
+  if (textHasBlockedDigitRuns(normalized)) return true;
+  if (isPlaceholderCarName(normalized)) return true;
     return false;
   }
 
