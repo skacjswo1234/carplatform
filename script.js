@@ -557,9 +557,36 @@ async function saveInquiry() {
         return false;
     }
     
+    const phoneDigits = document.getElementById('user_phone').value.replace(/[^0-9]/g, '');
+
+    if (typeof isInvalidName === 'function' && isInvalidName(userName)) {
+        showAlertModal('성함은 2글자 이상 정확히 입력해주세요.\n(자음/모음만·연속숫자 불가)');
+        return false;
+    }
+    if (typeof hasBannedWord === 'function' && hasBannedWord(userName)) {
+        showAlertModal('성함에 부적절한 단어가 포함되어 있습니다.');
+        return false;
+    }
+    if (typeof isInvalidCarNameText === 'function' && isInvalidCarNameText(carName)) {
+        showAlertModal('차종을 정확히 입력해주세요.\n(자음/모음만·숫자만·연속숫자 불가)');
+        return false;
+    }
+    if (typeof hasBannedWord === 'function' && hasBannedWord(carName)) {
+        showAlertModal('차종에 부적절한 단어가 포함되어 있습니다.');
+        return false;
+    }
+    if (!/^[0-9]{11}$/.test(phoneDigits)) {
+        showAlertModal('올바른 연락처를 입력해주세요.\n(숫자만 입력, 11자리)');
+        return false;
+    }
+    if (typeof isInvalidPhonePattern === 'function' && isInvalidPhonePattern(phoneDigits)) {
+        showAlertModal('연락처에 동일·연속 숫자만 있는 번호는 사용할 수 없습니다.');
+        return false;
+    }
+
     const formData = {
         name: userName,
-        phone: document.getElementById('user_phone').value.replace(/[^0-9]/g, ''),
+        phone: phoneDigits,
         affiliation: document.querySelector('input[name="wr_7"]:checked')?.value || null,
         vehicle_type: document.querySelector('input[name="wr_3"]:checked')?.value || null,
         car_name: carName || null,
@@ -580,6 +607,10 @@ async function saveInquiry() {
             if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
                 // 서버 측 IP 제한에 걸린 경우
                 showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
+                return false;
+            }
+            if (response.status === 400 && errorData.error) {
+                showAlertModal(errorData.error);
                 return false;
             }
             throw new Error('데이터 저장에 실패했습니다.');

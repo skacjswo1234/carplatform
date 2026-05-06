@@ -15,18 +15,98 @@ function sanitizeInput(value) {
   return value.trim();
 }
 
-const BANNED_WORDS = ['씨발', '시발', '병신', '좆', '존나', '개새끼', '미친놈', '미친년', '섹스', '보지', '자지', '걸레', '창녀'];
+const BANNED_WORDS = [
+  '씨발', '시발', '씨팔', '시팔', 'ㅅㅂ', 'ㅆㅂ', 'ㅅㅍ', 'ㅆㅍ',
+  '좆', '좃', '존나', '졸라', '병신', '븅신',
+  '개새끼', '개새', '개년', '개놈', '개자식', '개같', '개소리',
+  '미친놈', '미친년', '미친새끼',
+  '지랄', '닥쳐', '닥치', '꺼져', '꺼지', '죽어', '죽일',
+  '느금', '니미', '느그', '애미', '애비', '애미년', '엿먹',
+  '병맛', '엿같', '좆같', '꼴리',
+  '십새', '18넘', '18년', '18놈', '18녀',
+  'fuck', 'shit', 'bitch', 'asshole', 'damn', 'porn', 'sex',
+  '섹스', '야동', '포르노',
+  '보지', '자지', '걸레', '창녀', '창남', '음란',
+  '자위', '딸딸', '오피', '유흥',
+  '강간', '성폭', 'rape',
+];
 
-function isInvalidName(name) {
-  if (!name || name.length < 2) return true;
-  // 자음/모음만 입력한 경우 차단 (예: ㄱㄱ, ㅏㅏ)
-  if (/^[ㄱ-ㅎㅏ-ㅣ]+$/.test(name)) return true;
-  return false;
+function normalizeForBan(text) {
+  if (!text) return '';
+  return String(text).replace(/[\s\u200b\uFEFF·]+/g, '');
 }
 
 function hasBannedWord(text) {
   if (!text) return false;
-  return BANNED_WORDS.some((word) => text.includes(word));
+  const raw = String(text);
+  const flat = normalizeForBan(raw);
+  return BANNED_WORDS.some((w) => {
+    if (/^[a-zA-Z]+$/.test(w)) {
+      try {
+        const re = new RegExp(`\\b${w}\\b`, 'i');
+        return re.test(raw) || re.test(flat);
+      } catch (e) {
+        return raw.toLowerCase().includes(w.toLowerCase());
+      }
+    }
+    return raw.includes(w) || flat.includes(w);
+  });
+}
+
+function isJamoOnly(text) {
+  return /^[ㄱ-ㅎㅏ-ㅣ]+$/.test(text);
+}
+
+function textHasBlockedDigitRuns(s) {
+  if (!s) return false;
+  if (/(\d)\1{5,}/.test(s)) return true;
+  for (let i = 0; i <= s.length - 6; i++) {
+    const slice = s.slice(i, i + 6);
+    if (!/^\d{6}$/.test(slice)) continue;
+    let asc = true;
+    let desc = true;
+    for (let j = 1; j < 6; j++) {
+      const cur = slice.charCodeAt(j) - 48;
+      const prev = slice.charCodeAt(j - 1) - 48;
+      if (cur !== prev + 1) asc = false;
+      if (cur !== prev - 1) desc = false;
+    }
+    if (asc || desc) return true;
+  }
+  return false;
+}
+
+function isInvalidName(name) {
+  if (!name || String(name).length < 2) return true;
+  if (isJamoOnly(name)) return true;
+  if (textHasBlockedDigitRuns(name)) return true;
+  return false;
+}
+
+function isInvalidCarNameText(text) {
+  if (!text || String(text).length < 2) return true;
+  if (isJamoOnly(text)) return true;
+  if (/^\d+$/.test(String(text))) return true;
+  if (textHasBlockedDigitRuns(text)) return true;
+  return false;
+}
+
+function isInvalidPhonePattern(digits) {
+  if (!/^[0-9]{11}$/.test(digits)) return true;
+  if (/^(\d)\1{10}$/.test(digits)) return true;
+  if (/(\d)\1{7,}/.test(digits)) return true;
+  for (let i = 0; i <= digits.length - 6; i++) {
+    let asc = true;
+    let desc = true;
+    for (let j = 1; j < 6; j++) {
+      const cur = digits.charCodeAt(i + j) - 48;
+      const prev = digits.charCodeAt(i + j - 1) - 48;
+      if (cur !== prev + 1) asc = false;
+      if (cur !== prev - 1) desc = false;
+    }
+    if (asc || desc) return true;
+  }
+  return false;
 }
 
 // IP 주소 가져오기 (Cloudflare의 CF-Connecting-IP 헤더 사용)
@@ -207,6 +287,42 @@ export async function onRequestPost(context) {
     // SQL 인젝션 검증
     const sanitizedName = sanitizeInput(name);
     const sanitizedCarName = car_name ? sanitizeInput(car_name) : null;
+
+    let sanitizedAffiliation = null;
+    if (affiliation != null && String(affiliation).trim() !== '') {
+      const a = sanitizeInput(String(affiliation).trim());
+      if (a === null) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: '입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.'
+        }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
+      sanitizedAffiliation = a;
+    }
+
+    let sanitizedVehicleType = null;
+    if (vehicle_type != null && String(vehicle_type).trim() !== '') {
+      const v = sanitizeInput(String(vehicle_type).trim());
+      if (v === null) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: '입력하신 내용에 허용되지 않은 문자가 포함되어 있습니다.'
+        }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
+      sanitizedVehicleType = v;
+    }
     
     if (sanitizedName === null || sanitizedCarName === null) {
       return new Response(JSON.stringify({
@@ -234,10 +350,23 @@ export async function onRequestPost(context) {
       });
     }
 
+    if (!sanitizedCarName) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: '차종을 입력해주세요.'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
     if (isInvalidName(sanitizedName)) {
       return new Response(JSON.stringify({
         success: false,
-        error: '성함은 2글자 이상 정확히 입력해주세요. (자음/모음만 입력 불가)'
+        error: '성함은 2글자 이상 정확히 입력해주세요. (자음/모음만·연속숫자 불가)'
       }), {
         status: 400,
         headers: {
@@ -260,12 +389,77 @@ export async function onRequestPost(context) {
       });
     }
 
+    if (isInvalidCarNameText(sanitizedCarName)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: '차종을 정확히 입력해주세요. (자음/모음만·숫자만·연속숫자 불가)'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    if (hasBannedWord(sanitizedCarName)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: '차종에 부적절한 단어가 포함되어 있습니다.'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    if (sanitizedAffiliation && hasBannedWord(sanitizedAffiliation)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: '입력값에 부적절한 단어가 포함되어 있습니다.'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    if (sanitizedVehicleType && hasBannedWord(sanitizedVehicleType)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: '입력값에 부적절한 단어가 포함되어 있습니다.'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
     // 전화번호 숫자만 허용 검증
     const phoneNumber = phone.replace(/[^0-9]/g, '');
     if (!/^[0-9]{11}$/.test(phoneNumber)) {
       return new Response(JSON.stringify({
         success: false,
         error: '올바른 연락처를 입력해주세요. (숫자만 입력, 11자리)'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    if (isInvalidPhonePattern(phoneNumber)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: '연락처에 동일·연속 숫자만 있는 번호는 사용할 수 없습니다.'
       }), {
         status: 400,
         headers: {
@@ -299,7 +493,7 @@ export async function onRequestPost(context) {
     const result = await db.prepare(`
       INSERT INTO inquiries (wr_name, wr_subject, wr_7, wr_3, wr_4, status, created_at)
       VALUES (?, ?, ?, ?, ?, 'new', ?)
-    `).bind(sanitizedName, phoneNumber, affiliation || null, vehicle_type || null, sanitizedCarName || null, kstDateTime).run();
+    `).bind(sanitizedName, phoneNumber, sanitizedAffiliation, sanitizedVehicleType, sanitizedCarName || null, kstDateTime).run();
 
     if (result.success) {
       // IP 제한 기록 업데이트
