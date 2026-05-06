@@ -320,6 +320,20 @@ function validateStep04() {
         carNameInput.focus();
         return false;
     }
+
+    if (typeof isInvalidCarNameText === 'function' && isInvalidCarNameText(sanitized)) {
+        carNameInput.classList.add('error');
+        showAlertModal('차량명을 정확히 입력해주세요.\n(예: K8, EV6, 쏘렌토)\n형식이 맞지 않으면 다음 단계로 넘어갈 수 없습니다.');
+        carNameInput.focus();
+        return false;
+    }
+
+    if (typeof hasBannedWord === 'function' && hasBannedWord(sanitized)) {
+        carNameInput.classList.add('error');
+        showAlertModal('차량명에 부적절한 단어가 포함되어 있습니다.\n차량명을 다시 입력해주세요.');
+        carNameInput.focus();
+        return false;
+    }
     
     return true;
 }

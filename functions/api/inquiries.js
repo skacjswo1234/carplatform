@@ -57,6 +57,15 @@ function isJamoOnly(text) {
   return /^[ㄱ-ㅎㅏ-ㅣ]+$/.test(text);
 }
 
+function isPlaceholderCarName(text) {
+  if (!text) return false;
+  const trimmed = String(text).trim().toLowerCase();
+  if (/^(test|tester|sample|temp|none|null|na|n\/a)$/.test(trimmed)) return true;
+  if (/^(.)\1{1,}$/.test(trimmed)) return true;
+  if (/^[a-z]{2}$/.test(trimmed)) return true;
+  return false;
+}
+
 function textHasBlockedDigitRuns(s) {
   if (!s) return false;
   if (/(\d)\1{5,}/.test(s)) return true;
@@ -88,6 +97,7 @@ function isInvalidCarNameText(text) {
   if (isJamoOnly(text)) return true;
   if (/^\d+$/.test(String(text))) return true;
   if (textHasBlockedDigitRuns(text)) return true;
+  if (isPlaceholderCarName(text)) return true;
   return false;
 }
 

@@ -42,6 +42,15 @@
     return /^[ㄱ-ㅎㅏ-ㅣ]+$/.test(text);
   }
 
+  function isPlaceholderCarName(text) {
+    if (!text) return false;
+    const trimmed = String(text).trim().toLowerCase();
+    if (/^(test|tester|sample|temp|none|null|na|n\/a)$/.test(trimmed)) return true;
+    if (/^(.)\1{1,}$/.test(trimmed)) return true;
+    if (/^[a-z]{2}$/.test(trimmed)) return true;
+    return false;
+  }
+
   /** 이름·차종 등 자유 입력: 6자리 이상 동일숫자 연속 또는 6자리 연속 증가/감소 숫자열 */
   function textHasBlockedDigitRuns(s) {
     if (!s) return false;
@@ -75,6 +84,7 @@
     if (isJamoOnly(text)) return true;
     if (/^\d+$/.test(String(text))) return true;
     if (textHasBlockedDigitRuns(text)) return true;
+    if (isPlaceholderCarName(text)) return true;
     return false;
   }
 
