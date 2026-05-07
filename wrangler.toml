@@ -11,3 +11,9 @@ database_id = "459f61d7-bf8b-4b0a-8cc2-505ece4fb8b3"
 [[r2_buckets]]
 binding = "REVIEWS_BUCKET"
 bucket_name = "carplatform-bucket"
+
+# KV (IP당 24시간 1회 문의 제한)
+# KV Namespace id: 03a15fee1c7940d6bc4d5ecc6b6e2b64
+[[kv_namespaces]]
+binding = "INQUIRY_LIMITS_KV"
+id = "03a15fee1c7940d6bc4d5ecc6b6e2b64"

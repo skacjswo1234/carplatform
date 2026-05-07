@@ -1,19 +1,5 @@
 // IP 기반 제한 체크 API
 
-// 한국 시간대(KST, UTC+9)로 현재 시간 생성
-function getKSTDateTime() {
-  const now = new Date();
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-  const kstTime = new Date(utcTime + (9 * 60 * 60 * 1000));
-  const year = kstTime.getFullYear();
-  const month = String(kstTime.getMonth() + 1).padStart(2, '0');
-  const day = String(kstTime.getDate()).padStart(2, '0');
-  const hours = String(kstTime.getHours()).padStart(2, '0');
-  const minutes = String(kstTime.getMinutes()).padStart(2, '0');
-  const seconds = String(kstTime.getSeconds()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
 // IP 주소 가져오기
 function getClientIP(request) {
   const cfConnectingIP = request.headers.get('CF-Connecting-IP');
@@ -30,10 +16,49 @@ function getClientIP(request) {
   return 'unknown';
 }
 
-// IP 기반 제한 체크 (한 IP당 24시간 내 1회 제한)
-async function checkIPLimit(db, ipAddress) {
+const LIMIT_TTL_SECONDS = 24 * 60 * 60;
+
+function ipKey(ip) {
+  return `inquiry_ip:${ip}`;
+}
+
+async function checkIPLimitKV(kv, ipAddress) {
   try {
-    // 해당 IP의 최근 24시간 내 문의 기록 조회
+    const key = ipKey(ipAddress);
+    const raw = await kv.get(key);
+    if (!raw) return { allowed: true, count: 0, hoursRemaining: null };
+
+    // raw는 { ts: number } 형태를 기대하지만, 문자열이든 뭐든 안전하게 처리
+    let ts = null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.ts === 'number') ts = parsed.ts;
+    } catch (_) {}
+
+    if (ts == null) {
+      // 값이 있는데 파싱이 안 되면, 안전하게 제한(=허용 안 함)
+      return { allowed: false, count: 1, hoursRemaining: 24 };
+    }
+
+    const ageSec = Math.floor((Date.now() - ts) / 1000);
+    const remainingSec = Math.max(0, LIMIT_TTL_SECONDS - ageSec);
+    const hoursRemaining = remainingSec > 0 ? Math.ceil(remainingSec / 3600) : 0;
+
+    if (remainingSec > 0) {
+      return { allowed: false, count: 1, hoursRemaining };
+    }
+
+    // TTL이 지났는데도 값이 남아있는 경우(드물지만), 허용 처리
+    return { allowed: true, count: 0, hoursRemaining: null };
+  } catch (error) {
+    console.error('KV IP 제한 체크 오류:', error);
+    return { allowed: true, count: 0, hoursRemaining: null };
+  }
+}
+
+// (폴백) D1 기반 제한 체크 (한 IP당 24시간 내 1회 제한)
+async function checkIPLimitD1(db, ipAddress) {
+  try {
     const limitRecord = await db.prepare(`
       SELECT * FROM inquiry_limits 
       WHERE ip_address = ? 
@@ -42,14 +67,9 @@ async function checkIPLimit(db, ipAddress) {
       LIMIT 1
     `).bind(ipAddress).first();
     
-    if (!limitRecord) {
-      // 첫 문의이거나 24시간이 지난 경우
-      return { allowed: true, count: 0 };
-    }
+    if (!limitRecord) return { allowed: true, count: 0, hoursRemaining: null };
     
-    // 24시간 내 문의 횟수 확인 (1회 이상이면 제한)
     if (limitRecord.inquiry_count >= 1) {
-      // 마지막 문의 시간 계산
       const lastInquiry = new Date(limitRecord.last_inquiry_at);
       const now = new Date();
       const hoursSinceLastInquiry = (now - lastInquiry) / (1000 * 60 * 60);
@@ -63,11 +83,10 @@ async function checkIPLimit(db, ipAddress) {
       }
     }
     
-    return { allowed: true, count: limitRecord.inquiry_count || 0 };
+    return { allowed: true, count: limitRecord.inquiry_count || 0, hoursRemaining: null };
   } catch (error) {
-    console.error('IP 제한 체크 오류:', error);
-    // 오류 발생 시 허용 (서버 오류로 인한 정상 사용자 차단 방지)
-    return { allowed: true, count: 0 };
+    console.error('D1 IP 제한 체크 오류:', error);
+    return { allowed: true, count: 0, hoursRemaining: null };
   }
 }
 
@@ -96,8 +115,13 @@ export async function onRequestPost(context) {
       });
     }
 
-    const db = env['carplatform-db'];
-    const limitCheck = await checkIPLimit(db, ip);
+    let limitCheck;
+    if (env && env.INQUIRY_LIMITS_KV) {
+      limitCheck = await checkIPLimitKV(env.INQUIRY_LIMITS_KV, ip);
+    } else {
+      const db = env['carplatform-db'];
+      limitCheck = await checkIPLimitD1(db, ip);
+    }
 
     return new Response(JSON.stringify({
       success: true,

@@ -224,6 +224,47 @@ async function checkIPLimit(db, ipAddress) {
   }
 }
 
+const LIMIT_TTL_SECONDS = 24 * 60 * 60;
+
+function ipKey(ip) {
+  return `inquiry_ip:${ip}`;
+}
+
+async function checkIPLimitKV(kv, ipAddress) {
+  try {
+    const raw = await kv.get(ipKey(ipAddress));
+    if (!raw) return { allowed: true, count: 0 };
+
+    let ts = null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.ts === 'number') ts = parsed.ts;
+    } catch (_) {}
+
+    if (ts == null) return { allowed: false, count: 1, hoursRemaining: 24 };
+
+    const ageSec = Math.floor((Date.now() - ts) / 1000);
+    const remainingSec = Math.max(0, LIMIT_TTL_SECONDS - ageSec);
+    const hoursRemaining = remainingSec > 0 ? Math.ceil(remainingSec / 3600) : 0;
+
+    if (remainingSec > 0) return { allowed: false, count: 1, hoursRemaining };
+    return { allowed: true, count: 0 };
+  } catch (error) {
+    console.error('KV 제한 체크 오류:', error);
+    return { allowed: true, count: 0 };
+  }
+}
+
+async function updateIPLimitKV(kv, ipAddress) {
+  try {
+    await kv.put(ipKey(ipAddress), JSON.stringify({ ts: Date.now() }), {
+      expirationTtl: LIMIT_TTL_SECONDS
+    });
+  } catch (error) {
+    console.error('KV 제한 업데이트 오류:', error);
+  }
+}
+
 // IP 제한 기록 업데이트
 async function updateIPLimit(db, ipAddress) {
   try {
@@ -511,7 +552,9 @@ export async function onRequestPost(context) {
     const db = env['carplatform-db'];
 
     // IP 기반 제한 체크
-    const limitCheck = await checkIPLimit(db, ip);
+    const limitCheck = (env && env.INQUIRY_LIMITS_KV)
+      ? await checkIPLimitKV(env.INQUIRY_LIMITS_KV, ip)
+      : await checkIPLimit(db, ip);
     if (!limitCheck.allowed) {
       return new Response(JSON.stringify({
         success: false,
@@ -535,8 +578,12 @@ export async function onRequestPost(context) {
     `).bind(sanitizedName, phoneNumber, sanitizedAffiliation, sanitizedVehicleType, sanitizedCarName || null, kstDateTime).run();
 
     if (result.success) {
-      // IP 제한 기록 업데이트
-      await updateIPLimit(db, ip);
+      // IP 제한 기록 업데이트 (KV 우선)
+      if (env && env.INQUIRY_LIMITS_KV) {
+        await updateIPLimitKV(env.INQUIRY_LIMITS_KV, ip);
+      } else {
+        await updateIPLimit(db, ip);
+      }
       
       const inquiryId = result.meta.last_row_id;
       return new Response(JSON.stringify({
