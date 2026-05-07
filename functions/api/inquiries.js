@@ -523,10 +523,10 @@ export async function onRequestPost(context) {
 
     // 전화번호 숫자만 허용 검증
     const phoneNumber = phone.replace(/[^0-9]/g, '');
-    if (!/^[0-9]{11}$/.test(phoneNumber)) {
+    if (!/^01[016789][0-9]{8}$/.test(phoneNumber)) {
       return new Response(JSON.stringify({
         success: false,
-        error: '올바른 연락처를 입력해주세요. (숫자만 입력, 11자리)'
+        error: '올바른 연락처를 입력해주세요. (휴대폰 번호 11자리: 010, 011, 016~019)'
       }), {
         status: 400,
         headers: {

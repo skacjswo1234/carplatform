@@ -151,8 +151,8 @@ async function saveInquiry(name, phone, carName) {
     
     // 전화번호 숫자만 허용 검증
     const phoneNumber = phone.replace(/[^0-9]/g, '');
-    if (!/^[0-9]{11}$/.test(phoneNumber)) {
-        showAlertModal('올바른 연락처를 입력해주세요.\n(숫자만 입력, 11자리)');
+    if (!/^01[016789][0-9]{8}$/.test(phoneNumber)) {
+        showAlertModal('올바른 연락처를 입력해주세요.\n(휴대폰 번호 11자리: 010, 011, 016~019)');
         return false;
     }
 
@@ -652,8 +652,8 @@ function initForms() {
             }
 
             const phoneNumber = phone.replace(/[^0-9]/g, '');
-            if (!/^[0-9]{11}$/.test(phoneNumber)) {
-                showAlert('연락처는 숫자 11자리로 입력해주세요.');
+            if (!/^01[016789][0-9]{8}$/.test(phoneNumber)) {
+                showAlert('연락처를 휴대폰 번호 11자리로 입력해주세요.\n(010, 011, 016~019)');
                 phoneInput.focus();
                 return;
             }
@@ -811,8 +811,8 @@ function initMiniConsultation() {
             }
 
             const phoneNumber = phone.replace(/[^0-9]/g, '');
-            if (!/^[0-9]{11}$/.test(phoneNumber)) {
-                showAlert('연락처는 숫자 11자리로 입력해주세요.');
+            if (!/^01[016789][0-9]{8}$/.test(phoneNumber)) {
+                showAlert('연락처를 휴대폰 번호 11자리로 입력해주세요.\n(010, 011, 016~019)');
                 phoneInput.focus();
                 return;
             }

@@ -369,12 +369,12 @@ function validateStep05() {
         return false;
     }
     
-    // 연락처 형식 검증 (숫자만, 10-11자리)
-    const phonePattern = /^[0-9]{10,11}$/;
+    // 연락처 형식 검증 (국내 휴대폰: 01x + 11자리)
+    const phonePattern = /^01[016789][0-9]{8}$/;
     const phoneNumber = userPhone.replace(/[^0-9]/g, '');
     if (!phonePattern.test(phoneNumber)) {
         userPhoneInput.classList.add('error');
-        showAlertModal('올바른 연락처를 입력해주세요.\n(숫자만 입력, 10-11자리)');
+        showAlertModal('올바른 연락처를 입력해주세요.\n(휴대폰 번호 11자리: 010, 011, 016~019)');
         userPhoneInput.focus();
         return false;
     }
@@ -589,8 +589,8 @@ async function saveInquiry() {
         showAlertModal('차종에 부적절한 단어가 포함되어 있습니다.');
         return false;
     }
-    if (!/^[0-9]{11}$/.test(phoneDigits)) {
-        showAlertModal('올바른 연락처를 입력해주세요.\n(숫자만 입력, 11자리)');
+    if (!/^01[016789][0-9]{8}$/.test(phoneDigits)) {
+        showAlertModal('올바른 연락처를 입력해주세요.\n(휴대폰 번호 11자리: 010, 011, 016~019)');
         return false;
     }
     if (typeof isInvalidPhonePattern === 'function' && isInvalidPhonePattern(phoneDigits)) {

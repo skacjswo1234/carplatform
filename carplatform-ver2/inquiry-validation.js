@@ -43,7 +43,8 @@
   }
 
   function hasJamoRun(text) {
-    return /[ㄱ-ㅎㅏ-ㅣ]{2,}/.test(String(text || ''));
+    // 성함에 자모(초성/모음) 1글자라도 섞이면 차단
+    return /[ㄱ-ㅎㅏ-ㅣ]/.test(String(text || ''));
   }
 
   function isPlaceholderCarName(text) {
