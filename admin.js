@@ -468,6 +468,72 @@ async function updateStatus(id, status) {
     }
 }
 
+function memoHasBlockedPatterns(memo) {
+    const t = String(memo || '').trim();
+    if (!t) return false;
+
+    // 초성/자모(ㄱ-ㅎ,ㅏ-ㅣ) 연속 입력 차단 (문장 중 일부라도 있으면 차단)
+    if (/[ㄱ-ㅎㅏ-ㅣ]{2,}/.test(t)) return true;
+
+    // 연속 번호 차단: 4자리 이상 동일숫자 반복 또는 4자리 연속 증가/감소
+    if (/(\d)\1{3,}/.test(t)) return true;
+    const minLen = 4;
+    for (let i = 0; i <= t.length - minLen; i++) {
+        const slice = t.slice(i, i + minLen);
+        if (!/^\d{4}$/.test(slice)) continue;
+        let asc = true;
+        let desc = true;
+        for (let j = 1; j < minLen; j++) {
+            const cur = slice.charCodeAt(j) - 48;
+            const prev = slice.charCodeAt(j - 1) - 48;
+            if (cur !== prev + 1) asc = false;
+            if (cur !== prev - 1) desc = false;
+        }
+        if (asc || desc) return true;
+    }
+
+    if (typeof hasBannedWord === 'function' && hasBannedWord(t)) return true;
+
+    return false;
+}
+
+async function updateInquiry(id, status, memo) {
+    // 메모 검증 (서버에서도 동일하게 체크하지만, 관리자 UX를 위해 먼저 막음)
+    if (memo != null && String(memo).trim() !== '' && memoHasBlockedPatterns(memo)) {
+        showMessageModal('메모에 초성(자음/모음만) 또는 연속번호/부적절한 단어가 포함되어 저장할 수 없습니다.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/inquiries/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status, memo }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || '정보 업데이트에 실패했습니다.');
+        }
+
+        // 로컬 상태 업데이트
+        const inquiry = allInquiries.find(item => item.id === id);
+        if (inquiry) {
+            inquiry.status = status;
+            inquiry.memo = memo || null;
+        }
+
+        renderInquiries();
+        closeModal();
+        showMessageModal('저장되었습니다.', 'success');
+    } catch (error) {
+        console.error('Error updating inquiry:', error);
+        showMessageModal(String(error && error.message ? error.message : '정보 업데이트에 실패했습니다.'), 'error');
+    }
+}
+
 // 문의 삭제
 async function deleteInquiry(id) {
     showConfirmModal({

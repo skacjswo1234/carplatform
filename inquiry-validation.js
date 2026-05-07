@@ -42,6 +42,10 @@
     return /^[ㄱ-ㅎㅏ-ㅣ]+$/.test(text);
   }
 
+  function hasJamoRun(text) {
+    return /[ㄱ-ㅎㅏ-ㅣ]{2,}/.test(String(text || ''));
+  }
+
   function isPlaceholderCarName(text) {
     if (!text) return false;
     const trimmed = String(text).trim().toLowerCase();
@@ -71,11 +75,34 @@
     return false;
   }
 
+  /** 성함: 4자리 이상 동일숫자 반복 또는 4자리 연속 증가/감소 숫자열 */
+  function nameHasBlockedDigitRuns(s) {
+    if (!s) return false;
+    const str = String(s);
+    if (/(\d)\1{3,}/.test(str)) return true;
+    const minLen = 4;
+    for (let i = 0; i <= str.length - minLen; i++) {
+      const slice = str.slice(i, i + minLen);
+      if (!/^\d{4}$/.test(slice)) continue;
+      let asc = true;
+      let desc = true;
+      for (let j = 1; j < minLen; j++) {
+        const cur = slice.charCodeAt(j) - 48;
+        const prev = slice.charCodeAt(j - 1) - 48;
+        if (cur !== prev + 1) asc = false;
+        if (cur !== prev - 1) desc = false;
+      }
+      if (asc || desc) return true;
+    }
+    return false;
+  }
+
   function isInvalidName(name) {
   const normalized = String(name || '').trim();
   if (!normalized || normalized.length < 2) return true;
   if (isJamoOnly(normalized)) return true;
-  if (textHasBlockedDigitRuns(normalized)) return true;
+  if (hasJamoRun(normalized)) return true;
+  if (nameHasBlockedDigitRuns(normalized)) return true;
     return false;
   }
 
