@@ -87,6 +87,8 @@ function initEventListeners() {
         });
     }
 
+    initIpBlockListeners();
+
     // 검색 및 필터
     document.getElementById('searchInput').addEventListener('input', function() {
         filterInquiries();
@@ -250,17 +252,182 @@ function switchPage(page) {
     }
 }
 
-let ipBlockData = { blocked: [], inquiry_ips: [], inquiry_records: [] };
+let ipBlockData = { blocked: [], inquiry_records: [] };
+let ipBlockListPage = 1;
+let ipBlockGroupPage = 1;
+const IPBLOCK_PER_PAGE = 15;
+let ipBlockView = 'list';
+
+function initIpBlockListeners() {
+    const search = document.getElementById('ipblockSearch');
+    const filter = document.getElementById('ipblockFilter');
+    if (search) {
+        search.addEventListener('input', () => {
+            ipBlockListPage = 1;
+            ipBlockGroupPage = 1;
+            renderIpBlockViews();
+        });
+    }
+    if (filter) {
+        filter.addEventListener('change', () => {
+            ipBlockListPage = 1;
+            ipBlockGroupPage = 1;
+            renderIpBlockViews();
+        });
+    }
+    document.querySelectorAll('.ipblock-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+            const view = tab.dataset.ipblockView || 'list';
+            setIpBlockView(view);
+        });
+    });
+}
+
+function setIpBlockView(view) {
+    ipBlockView = view;
+    document.querySelectorAll('.ipblock-tab').forEach((t) => {
+        t.classList.toggle('active', t.dataset.ipblockView === view);
+    });
+    const listView = document.getElementById('ipblockListView');
+    const groupView = document.getElementById('ipblockGroupView');
+    if (listView) listView.hidden = view !== 'list';
+    if (groupView) groupView.hidden = view !== 'group';
+    renderIpBlockViews();
+}
+
+function getFilteredIpBlockRecords() {
+    const list = ipBlockData.inquiry_records || [];
+    const q = (document.getElementById('ipblockSearch')?.value || '').trim().toLowerCase();
+    const filter = document.getElementById('ipblockFilter')?.value || 'all';
+
+    return list.filter((row) => {
+        if (filter === 'has_ip' && !row.client_ip) return false;
+        if (filter === 'no_ip' && row.client_ip) return false;
+        if (filter === 'not_blocked' && row.is_blocked) return false;
+        if (filter === 'blocked' && !row.is_blocked) return false;
+        if (!q) return true;
+        const hay = [
+            row.name,
+            row.phone,
+            row.car_name,
+            row.affiliation,
+            row.vehicle_type,
+            row.client_ip,
+            String(row.id),
+        ].filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(q);
+    });
+}
+
+function buildIpBlockGroups(records) {
+    const map = new Map();
+    for (const row of records) {
+        const key = row.client_ip || '__no_ip__';
+        if (!map.has(key)) {
+            map.set(key, {
+                ip: row.client_ip || null,
+                ip_label: row.client_ip || 'IP 미기록',
+                is_blocked: row.client_ip ? !!row.is_blocked : false,
+                inquiries: [],
+            });
+        }
+        const g = map.get(key);
+        g.inquiries.push(row);
+        if (row.client_ip && row.is_blocked) g.is_blocked = true;
+    }
+    return Array.from(map.values()).sort((a, b) => {
+        if (a.ip && !b.ip) return -1;
+        if (!a.ip && b.ip) return 1;
+        const ta = a.inquiries[0]?.created_at || '';
+        const tb = b.inquiries[0]?.created_at || '';
+        return String(tb).localeCompare(String(ta));
+    });
+}
+
+function renderInquiryContentCell(row) {
+    const lines = [
+        ['성함', row.name],
+        ['연락처', row.phone],
+    ];
+    if (row.affiliation) lines.push(['소속', row.affiliation]);
+    if (row.vehicle_type) lines.push(['차량유형', row.vehicle_type]);
+    lines.push(['차종', row.car_name]);
+    return `<div class="inquiry-content-cell">${lines.map(([label, val]) =>
+        `<div class="inq-line"><span class="inq-label">${label}</span>${escapeHtml(val || '-')}</div>`
+    ).join('')}</div>`;
+}
+
+function renderIpBlockStatusBadge(row) {
+    if (!row.client_ip) return '<span class="status-badge processing">IP 없음</span>';
+    if (row.is_blocked) return '<span class="status-badge completed">차단됨</span>';
+    return '<span class="status-badge new">정상</span>';
+}
+
+function renderIpBlockAction(row) {
+    if (!row.client_ip) return '<span class="ip-missing">—</span>';
+    if (row.is_blocked) {
+        return `<button type="button" class="btn-action" onclick="unblockIpAddress(${JSON.stringify(row.client_ip)})">해제</button>`;
+    }
+    return `<button type="button" class="btn-action btn-delete" onclick="blockIpAddress(${JSON.stringify(row.client_ip)}, ${JSON.stringify('문의 #' + row.id)})">차단</button>`;
+}
+
+function renderIpBlockPagination(containerId, infoId, current, total, onChangeFn) {
+    const pagination = document.getElementById(containerId);
+    const info = document.getElementById(infoId);
+    if (!pagination) return;
+
+    if (info) {
+        if (total === 0) {
+            info.textContent = '표시할 항목이 없습니다.';
+        } else {
+            const start = (current - 1) * IPBLOCK_PER_PAGE + 1;
+            const end = Math.min(current * IPBLOCK_PER_PAGE, total);
+            info.textContent = `총 ${total}건 · ${start}–${end}번째 표시`;
+        }
+    }
+
+    const totalPages = Math.max(1, Math.ceil(total / IPBLOCK_PER_PAGE));
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+
+    let html = `<button type="button" class="pagination-btn" ${current === 1 ? 'disabled' : ''} onclick="${onChangeFn}(${current - 1})">이전</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) {
+            html += `<button type="button" class="pagination-btn ${i === current ? 'active' : ''}" onclick="${onChangeFn}(${i})">${i}</button>`;
+        } else if (i === current - 3 || i === current + 3) {
+            html += '<span class="pagination-ellipsis">…</span>';
+        }
+    }
+    html += `<button type="button" class="pagination-btn" ${current === totalPages ? 'disabled' : ''} onclick="${onChangeFn}(${current + 1})">다음</button>`;
+    pagination.innerHTML = html;
+}
+
+window.changeIpBlockListPage = function(page) {
+    ipBlockListPage = page;
+    renderInquiryRecordsTable();
+};
+
+window.changeIpBlockGroupPage = function(page) {
+    ipBlockGroupPage = page;
+    renderIpBlockGroupView();
+};
+
+function renderIpBlockViews() {
+    if (ipBlockView === 'group') renderIpBlockGroupView();
+    else renderInquiryRecordsTable();
+}
 
 async function loadIpBlockData() {
     const blockedBody = document.getElementById('blockedIpsTableBody');
-    const inquiryBody = document.getElementById('inquiryIpsTableBody');
     const recordsBody = document.getElementById('inquiryRecordsTableBody');
-    if (!blockedBody || !inquiryBody || !recordsBody) return;
+    const groupList = document.getElementById('ipblockGroupList');
+    if (!blockedBody || !recordsBody) return;
 
     blockedBody.innerHTML = '<tr><td colspan="4" class="loading">불러오는 중...</td></tr>';
-    inquiryBody.innerHTML = '<tr><td colspan="5" class="loading">불러오는 중...</td></tr>';
-    recordsBody.innerHTML = '<tr><td colspan="7" class="loading">불러오는 중...</td></tr>';
+    recordsBody.innerHTML = '<tr><td colspan="6" class="loading">불러오는 중...</td></tr>';
+    if (groupList) groupList.innerHTML = '<p class="loading">불러오는 중...</p>';
 
     try {
         const response = await fetch(`${API_BASE_URL}/blocked-ips`);
@@ -269,14 +436,15 @@ async function loadIpBlockData() {
             throw new Error(data.error || '불러오기 실패');
         }
         ipBlockData = data;
+        ipBlockListPage = 1;
+        ipBlockGroupPage = 1;
         renderBlockedIpsTable();
-        renderInquiryRecordsTable();
-        renderInquiryIpsTable();
+        renderIpBlockViews();
     } catch (error) {
         console.error('loadIpBlockData:', error);
         blockedBody.innerHTML = '<tr><td colspan="4" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
-        inquiryBody.innerHTML = '<tr><td colspan="5" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
-        if (recordsBody) recordsBody.innerHTML = '<tr><td colspan="7" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
+        recordsBody.innerHTML = '<tr><td colspan="6" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
+        if (groupList) groupList.innerHTML = '<p class="loading">데이터를 불러오지 못했습니다.</p>';
         showError('IP 목록을 불러오지 못했습니다. D1에 sql/blocked_ips.sql 실행이 필요할 수 있습니다.');
     }
 }
@@ -303,63 +471,92 @@ function renderBlockedIpsTable() {
 function renderInquiryRecordsTable() {
     const tbody = document.getElementById('inquiryRecordsTableBody');
     if (!tbody) return;
-    const list = ipBlockData.inquiry_records || [];
-    if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="loading">등록된 문의가 없습니다.</td></tr>';
+
+    const filtered = getFilteredIpBlockRecords();
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / IPBLOCK_PER_PAGE));
+    if (ipBlockListPage > totalPages) ipBlockListPage = totalPages;
+
+    const start = (ipBlockListPage - 1) * IPBLOCK_PER_PAGE;
+    const pageRows = filtered.slice(start, start + IPBLOCK_PER_PAGE);
+
+    if (!total) {
+        tbody.innerHTML = '<tr><td colspan="6" class="loading">조건에 맞는 문의가 없습니다.</td></tr>';
+        renderIpBlockPagination('ipblockPagination', 'ipblockPageInfo', ipBlockListPage, total, 'changeIpBlockListPage');
         return;
     }
-    tbody.innerHTML = list.map((row) => {
+
+    tbody.innerHTML = pageRows.map((row) => {
         const ipCell = row.client_ip
             ? `<code>${escapeHtml(row.client_ip)}</code>`
             : '<span class="ip-missing">미기록</span>';
-        const status = !row.client_ip
-            ? '<span class="status-badge processing">IP 없음</span>'
-            : row.is_blocked
-                ? '<span class="status-badge completed">차단됨</span>'
-                : '<span class="status-badge new">정상</span>';
-        let action = '<span class="ip-missing">—</span>';
-        if (row.client_ip) {
-            action = row.is_blocked
-                ? `<button type="button" class="btn-action" onclick="unblockIpAddress(${JSON.stringify(row.client_ip)})">차단 해제</button>`
-                : `<button type="button" class="btn-action btn-delete" onclick="blockIpAddress(${JSON.stringify(row.client_ip)}, ${JSON.stringify('문의 #' + row.id)})">차단</button>`;
-        }
         return `
         <tr>
+            <td>${row.id}</td>
             <td>${formatKoreanDateTime(row.created_at)}</td>
-            <td>${escapeHtml(row.name || '-')}</td>
-            <td>${escapeHtml(row.phone || '-')}</td>
-            <td>${escapeHtml(row.car_name || '-')}</td>
+            <td>${renderInquiryContentCell(row)}</td>
             <td>${ipCell}</td>
-            <td>${status}</td>
-            <td>${action}</td>
+            <td>${renderIpBlockStatusBadge(row)}</td>
+            <td>${renderIpBlockAction(row)}</td>
         </tr>`;
     }).join('');
+
+    renderIpBlockPagination('ipblockPagination', 'ipblockPageInfo', ipBlockListPage, total, 'changeIpBlockListPage');
 }
 
-function renderInquiryIpsTable() {
-    const tbody = document.getElementById('inquiryIpsTableBody');
-    const list = ipBlockData.inquiry_ips || [];
-    if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="loading">수집된 IP가 없습니다. 문의 접수 후 표시됩니다.</td></tr>';
+function renderIpBlockGroupView() {
+    const container = document.getElementById('ipblockGroupList');
+    if (!container) return;
+
+    const filtered = getFilteredIpBlockRecords();
+    const groups = buildIpBlockGroups(filtered);
+    const total = groups.length;
+    const totalPages = Math.max(1, Math.ceil(total / IPBLOCK_PER_PAGE));
+    if (ipBlockGroupPage > totalPages) ipBlockGroupPage = totalPages;
+
+    const start = (ipBlockGroupPage - 1) * IPBLOCK_PER_PAGE;
+    const pageGroups = groups.slice(start, start + IPBLOCK_PER_PAGE);
+
+    if (!total) {
+        container.innerHTML = '<p class="loading">조건에 맞는 IP 그룹이 없습니다.</p>';
+        renderIpBlockPagination('ipblockGroupPagination', 'ipblockGroupPageInfo', ipBlockGroupPage, total, 'changeIpBlockGroupPage');
         return;
     }
-    tbody.innerHTML = list.map((row) => {
-        const ipEsc = escapeHtml(row.ip_address);
-        const status = row.is_blocked
-            ? '<span class="status-badge completed">차단됨</span>'
-            : '<span class="status-badge new">정상</span>';
-        const action = row.is_blocked
-            ? `<button type="button" class="btn-action" onclick="unblockIpAddress(${JSON.stringify(row.ip_address)})">차단 해제</button>`
-            : `<button type="button" class="btn-action btn-delete" onclick="blockIpAddress(${JSON.stringify(row.ip_address)}, '문의 IP 목록에서 차단')">차단</button>`;
+
+    container.innerHTML = pageGroups.map((group) => {
+        const blockedClass = group.is_blocked ? ' is-blocked' : '';
+        const statusBadge = group.ip
+            ? (group.is_blocked
+                ? '<span class="status-badge completed">차단됨</span>'
+                : '<span class="status-badge new">정상</span>')
+            : '<span class="status-badge processing">IP 없음</span>';
+        let headerAction = '';
+        if (group.ip) {
+            headerAction = group.is_blocked
+                ? `<button type="button" class="btn-action" onclick="unblockIpAddress(${JSON.stringify(group.ip)})">차단 해제</button>`
+                : `<button type="button" class="btn-action btn-delete" onclick="blockIpAddress(${JSON.stringify(group.ip)}, 'IP별 묶음에서 차단')">이 IP 차단</button>`;
+        }
+        const inquiriesHtml = group.inquiries.map((row) => `
+            <div class="ipblock-group-inquiry">
+                <div class="inq-date">#${row.id} · ${formatKoreanDateTime(row.created_at)}</div>
+                ${renderInquiryContentCell(row)}
+            </div>
+        `).join('');
+
         return `
-        <tr>
-            <td><code>${ipEsc}</code></td>
-            <td>${row.inquiry_count || 0}</td>
-            <td>${formatKoreanDateTime(row.last_seen)}</td>
-            <td>${status}</td>
-            <td>${action}</td>
-        </tr>`;
+        <article class="ipblock-group-card${blockedClass}">
+            <header class="ipblock-group-header">
+                <div>
+                    <div class="group-ip"><code>${escapeHtml(group.ip_label)}</code></div>
+                    <div class="group-meta">문의 ${group.inquiries.length}건 · ${statusBadge}</div>
+                </div>
+                <div class="ipblock-group-actions">${headerAction}</div>
+            </header>
+            <div class="ipblock-group-inquiries">${inquiriesHtml}</div>
+        </article>`;
     }).join('');
+
+    renderIpBlockPagination('ipblockGroupPagination', 'ipblockGroupPageInfo', ipBlockGroupPage, total, 'changeIpBlockGroupPage');
 }
 
 async function blockIpAddress(ip, reason) {

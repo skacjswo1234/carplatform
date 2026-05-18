@@ -1382,24 +1382,75 @@ body {
 }
 
 /* IP 차단 관리 */
-.ipblock-section {
-    background: var(--card-bg, #fff);
+.ipblock-page .ipblock-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 24px;
     margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.ipblock-heading {
+.ipblock-page .ipblock-heading {
     margin: 0 0 8px;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
+    font-weight: bold;
+    color: var(--text-primary);
 }
 
-.ipblock-desc {
+.ipblock-page .ipblock-desc {
     margin: 0 0 16px;
     color: var(--text-secondary);
     font-size: 0.9rem;
-    line-height: 1.5;
+    line-height: 1.55;
+}
+
+.ipblock-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.ipblock-view-tabs {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ipblock-tab {
+    padding: 10px 18px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.ipblock-tab:hover {
+    color: var(--text-primary);
+    border-color: var(--accent);
+}
+
+.ipblock-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.ipblock-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.ipblock-toolbar .search-input {
+    flex: 1;
+    min-width: 220px;
 }
 
 .ipblock-form {
@@ -1409,19 +1460,83 @@ body {
     align-items: flex-end;
 }
 
-.ipblock-form label {
+.ipblock-pagination-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.ipblock-page-info {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.ipblock-page .ipblock-table {
+    min-width: 720px;
+}
+
+.ipblock-page .ipblock-table th {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+}
+
+.ipblock-page .ipblock-table td {
+    color: var(--text-primary);
+    vertical-align: top;
+}
+
+.ipblock-page .ipblock-table tbody tr:hover {
+    background: var(--bg-tertiary);
+}
+
+.ipblock-page .col-no {
+    width: 56px;
+}
+
+.ipblock-page .col-date {
+    width: 150px;
+    white-space: nowrap;
+}
+
+.ipblock-page .col-content {
+    min-width: 220px;
+}
+
+.ipblock-page .col-ip {
+    width: 130px;
+}
+
+.ipblock-page .col-status {
+    width: 88px;
+}
+
+.ipblock-page .col-action {
+    width: 100px;
+}
+
+.inquiry-content-cell {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
 }
 
-.ipblock-form input {
-    min-width: 200px;
-    padding: 10px 12px;
-    border: 1px solid var(--border-color, #ddd);
-    border-radius: 8px;
+.inquiry-content-cell .inq-line {
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--text-primary);
+}
+
+.inquiry-content-cell .inq-label {
+    display: inline-block;
+    min-width: 52px;
+    margin-right: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-secondary);
 }
 
 .ip-missing {
@@ -1429,17 +1544,84 @@ body {
     font-size: 0.85rem;
 }
 
-.ipblock-records-wrap {
-    max-height: 480px;
-    overflow: auto;
+.ipblock-page code {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--bg-tertiary);
+    color: #8ec8ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
 }
 
-#ipblockPage code {
-    font-family: ui-monospace, monospace;
-    font-size: 0.9em;
-    background: rgba(0, 0, 0, 0.05);
-    padding: 2px 6px;
-    border-radius: 4px;
+/* IP별 묶음 카드 */
+.ipblock-group-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ipblock-group-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.ipblock-group-card.is-blocked {
+    border-color: rgba(244, 67, 54, 0.45);
+}
+
+.ipblock-group-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border);
+}
+
+.ipblock-group-header .group-ip {
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.ipblock-group-header .group-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.ipblock-group-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ipblock-group-inquiries {
+    padding: 8px 0;
+}
+
+.ipblock-group-inquiry {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.ipblock-group-inquiry:last-child {
+    border-bottom: none;
+}
+
+.ipblock-group-inquiry .inq-date {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.ipblock-section-compact .table-container {
+    max-height: 280px;
+    overflow: auto;
 }
 
 /* 모바일 반응형 */
