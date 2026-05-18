@@ -13,8 +13,19 @@ document.addEventListener('DOMContentLoaded', function() {
     checkLoginStatus();
     
     initEventListeners();
+    prefetchBlockedIps();
     loadInquiries();
 });
+
+async function prefetchBlockedIps() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/blocked-ips`);
+        const data = await response.json();
+        if (response.ok && data.success) {
+            ipBlockData.blocked = data.blocked || [];
+        }
+    } catch (_) {}
+}
 
 // 로그인 상태 확인
 function checkLoginStatus() {
@@ -246,9 +257,22 @@ let ipBlockData = { blocked: [], inquiry_records: [], inquiry_ips: [] };
 let ipBlockPage = 1;
 const IPBLOCK_PER_PAGE = 10;
 
+function getBlockedIpSet() {
+    return new Set((ipBlockData.blocked || []).map((b) => b.ip_address));
+}
+
+function applyBlockedState(row) {
+    const ip = row.client_ip;
+    return {
+        ...row,
+        is_blocked: ip ? getBlockedIpSet().has(ip) : false,
+    };
+}
+
 function getIpBlockRows() {
-    const records = ipBlockData.inquiry_records || [];
+    const records = (ipBlockData.inquiry_records || []).map(applyBlockedState);
     const seenIps = new Set(records.map((r) => r.client_ip).filter(Boolean));
+    const blockedSet = getBlockedIpSet();
     const extra = (ipBlockData.inquiry_ips || [])
         .filter((row) => row.ip_address && !seenIps.has(row.ip_address))
         .map((row) => ({
@@ -258,7 +282,7 @@ function getIpBlockRows() {
             car_name: `접수 ${row.inquiry_count || 1}회`,
             client_ip: row.ip_address,
             created_at: row.last_seen,
-            is_blocked: !!row.is_blocked,
+            is_blocked: blockedSet.has(row.ip_address),
         }));
     return [...records, ...extra].sort((a, b) =>
         String(b.created_at || '').localeCompare(String(a.created_at || ''))
@@ -297,13 +321,24 @@ function initIpBlockListDelegation() {
         modalBody.dataset.ipblockBound = '1';
         modalBody.addEventListener('click', handler);
     }
+    const blockedBody = document.getElementById('ipblockBlockedBody');
+    if (blockedBody && !blockedBody.dataset.ipblockBound) {
+        blockedBody.dataset.ipblockBound = '1';
+        blockedBody.addEventListener('click', handler);
+    }
+}
+
+function renderIpBlockStatusCell(row) {
+    if (!row.client_ip) return '<span class="text-muted">-</span>';
+    if (row.is_blocked) return '<span class="status-badge completed">차단됨</span>';
+    return '<span class="status-badge new">정상</span>';
 }
 
 function renderIpBlockActionCell(row) {
     if (!row.client_ip) return '<span class="text-muted">-</span>';
     const ip = escapeAttr(row.client_ip);
     if (row.is_blocked) {
-        return `<button type="button" class="btn-action" data-action="unblock-ip" data-ip="${ip}">해제</button>`;
+        return `<button type="button" class="btn-action" data-action="unblock-ip" data-ip="${ip}">차단해제</button>`;
     }
     const reason = row.id ? `문의 #${row.id}` : row.client_ip;
     return `<button type="button" class="btn-action btn-delete" data-action="block-ip" data-ip="${ip}" data-reason="${escapeAttr(reason)}">차단하기</button>`;
@@ -344,7 +379,9 @@ async function loadIpBlockData() {
     const tbody = document.getElementById('ipblockListBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="6" class="loading">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">불러오는 중...</td></tr>';
+    const blockedBody = document.getElementById('ipblockBlockedBody');
+    if (blockedBody) blockedBody.innerHTML = '<tr><td colspan="4" class="loading">불러오는 중...</td></tr>';
 
     try {
         const response = await fetch(`${API_BASE_URL}/blocked-ips`);
@@ -355,9 +392,11 @@ async function loadIpBlockData() {
         ipBlockData = data;
         ipBlockPage = 1;
         renderIpBlockList();
+        renderIpBlockBlockedList();
     } catch (error) {
         console.error('loadIpBlockData:', error);
-        tbody.innerHTML = '<tr><td colspan="6" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
+        if (blockedBody) blockedBody.innerHTML = '<tr><td colspan="4" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
         showError('IP 목록을 불러오지 못했습니다. D1에 sql/blocked_ips.sql 실행이 필요할 수 있습니다.');
     }
 }
@@ -375,7 +414,7 @@ function renderIpBlockList() {
     const pageRows = list.slice(start, start + IPBLOCK_PER_PAGE);
 
     if (!total) {
-        tbody.innerHTML = '<tr><td colspan="6" class="loading">표시할 데이터가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">표시할 데이터가 없습니다.</td></tr>';
         renderIpBlockPagination();
         return;
     }
@@ -387,11 +426,34 @@ function renderIpBlockList() {
             <td>${escapeHtml(row.phone || '-')}</td>
             <td>${escapeHtml(row.car_name || '-')}</td>
             <td>${row.client_ip ? escapeHtml(row.client_ip) : '-'}</td>
+            <td>${renderIpBlockStatusCell(row)}</td>
             <td>${renderIpBlockActionCell(row)}</td>
         </tr>
     `).join('');
 
     renderIpBlockPagination();
+}
+
+function renderIpBlockBlockedList() {
+    const tbody = document.getElementById('ipblockBlockedBody');
+    if (!tbody) return;
+
+    const list = ipBlockData.blocked || [];
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="loading">차단된 IP가 없습니다.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = list.map((row) => {
+        const ip = escapeAttr(row.ip_address);
+        return `
+        <tr>
+            <td>${escapeHtml(row.ip_address)}</td>
+            <td>${escapeHtml(row.reason || '-')}</td>
+            <td>${formatKoreanDateTime(row.created_at)}</td>
+            <td><button type="button" class="btn-action" data-action="unblock-ip" data-ip="${ip}">차단해제</button></td>
+        </tr>`;
+    }).join('');
 }
 
 async function blockIpAddress(ip, reason) {
@@ -418,7 +480,9 @@ async function blockIpAddress(ip, reason) {
                     return;
                 }
                 showMessageModal('IP가 차단되었습니다.', 'success');
-                loadIpBlockData();
+                await prefetchBlockedIps();
+                const onIpPage = document.getElementById('ipblockPage')?.classList.contains('active');
+                if (onIpPage) loadIpBlockData();
             } catch (error) {
                 console.error('blockIpAddress:', error);
                 showError('IP 차단 중 오류가 발생했습니다.');
@@ -432,7 +496,7 @@ async function unblockIpAddress(ip) {
     showConfirmModal({
         title: 'IP 차단 해제',
         message: `${ip} 차단을 해제하시겠습니까?`,
-        confirmText: '해제',
+        confirmText: '차단해제',
         cancelText: '취소',
         danger: false,
         onConfirm: async () => {
@@ -446,7 +510,9 @@ async function unblockIpAddress(ip) {
                     return;
                 }
                 showMessageModal('IP 차단이 해제되었습니다.', 'success');
-                loadIpBlockData();
+                await prefetchBlockedIps();
+                const onIpPage = document.getElementById('ipblockPage')?.classList.contains('active');
+                if (onIpPage) loadIpBlockData();
             } catch (error) {
                 console.error('unblockIpAddress:', error);
                 showError('차단 해제 중 오류가 발생했습니다.');
@@ -597,6 +663,12 @@ async function showDetail(id) {
 
     const modalBody = document.getElementById('modalBody');
     const createdDate = formatKoreanDateTime(inquiry.created_at);
+    const ipBlocked = inquiry.client_ip && getBlockedIpSet().has(inquiry.client_ip);
+    const ipActionBtn = inquiry.client_ip
+        ? (ipBlocked
+            ? `<button type="button" class="btn-action" style="margin-top:8px" data-action="unblock-ip" data-ip="${escapeAttr(inquiry.client_ip)}">차단해제</button>`
+            : `<button type="button" class="btn-action btn-delete" style="margin-top:8px" data-action="block-ip" data-ip="${escapeAttr(inquiry.client_ip)}" data-reason="${escapeAttr('문의 #' + inquiry.id)}">차단하기</button>`)
+        : '';
 
     modalBody.innerHTML = `
         <div class="modal-detail-layout">
@@ -634,7 +706,7 @@ async function showDetail(id) {
                     <div class="detail-label">접수 IP</div>
                     <div class="detail-value">
                         <code>${escapeHtml(inquiry.client_ip)}</code>
-                        <button type="button" class="btn-action btn-delete" style="margin-top:8px" data-action="block-ip" data-ip="${escapeAttr(inquiry.client_ip)}" data-reason="${escapeAttr('문의 #' + inquiry.id)}">이 IP 차단</button>
+                        ${ipActionBtn}
                     </div>
                 </div>
                 ` : ''}

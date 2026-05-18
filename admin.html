@@ -3,172 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>카플랫폼 - 관리자 페이지</title>
+    <title>카�??�?�폼 - �?리�?� �??이�?</title>
     <link rel="preload" href="Paperlogy-9Black.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <!-- 모바일 메뉴 버튼 -->
-    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="메뉴 열기">
+    <!-- 모�?일 �?�?� �?�?� -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="�?�?� �?�기">
         <span></span>
         <span></span>
         <span></span>
     </button>
 
-    <!-- 사이드 네비게이션 -->
+    <!-- �?�이�?? �?��?�?이�?? -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h1 class="logo-text">카플랫폼</h1>
-            <h2>관리자 페이지</h2>
+            <h1 class="logo-text">카�??�?�폼</h1>
+            <h2>�?리�?� �??이�?</h2>
         </div>
         <ul class="nav-menu">
-            <li><a href="#" class="nav-item active" data-page="inquiries">문의 리스트</a></li>
-            <li><a href="#" class="nav-item" data-page="ipblock">IP 차단</a></li>
-            <li><a href="#" class="nav-item" data-page="reviews">고객후기 관리</a></li>
-            <li><a href="#" class="nav-item" data-page="password">비밀번호 변경</a></li>
-            <li><a href="#" class="nav-item" onclick="logout(); return false;">로그아웃</a></li>
+            <li><a href="#" class="nav-item active" data-page="inquiries">문�? 리�?��?�</a></li>
+            <li><a href="#" class="nav-item" data-page="ipblock">IP 차�?�</a></li>
+            <li><a href="#" class="nav-item" data-page="reviews">고객�??기 �?리</a></li>
+            <li><a href="#" class="nav-item" data-page="password">�?�?�?�?� �?경</a></li>
+            <li><a href="#" class="nav-item" onclick="logout(); return false;">�?그�??�??</a></li>
         </ul>
     </nav>
 
-    <!-- 모바일 오버레이 -->
+    <!-- 모�?일 �?��?�?이 -->
     <div class="mobile-overlay" id="mobileOverlay"></div>
 
-    <!-- 메인 콘텐츠 영역 -->
+    <!-- �?인 �?�?�츠 �?��?� -->
     <main class="main-content">
         <div class="content-header">
-            <h2 id="pageTitle">문의 리스트</h2>
-            <button class="refresh-btn" id="refreshBtn">새로고침</button>
+            <h2 id="pageTitle">문�? 리�?��?�</h2>
+            <button class="refresh-btn" id="refreshBtn">�??�?고침</button>
         </div>
 
-        <!-- 문의 리스트 페이지 -->
+        <!-- 문�? 리�?��?� �??이�? -->
         <div class="page-content active" id="inquiriesPage">
             <div class="filters">
                 <select id="filterStatus" class="filter-select">
-                    <option value="">전체</option>
-                    <option value="new">신규</option>
-                    <option value="processing">처리중</option>
-                    <option value="completed">완료</option>
+                    <option value="">�?체</option>
+                    <option value="new">�?��?</option>
+                    <option value="processing">�?리�?</option>
+                    <option value="completed">�??�?</option>
                 </select>
-                <input type="text" id="searchInput" class="search-input" placeholder="성함 또는 연락처로 검색...">
+                <input type="text" id="searchInput" class="search-input" placeholder="�?��?� �?��?? �?�락�?�? �?�??...">
             </div>
             
             <div class="table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>번호</th>
-                            <th>신청일시</th>
-                            <th>성함</th>
-                            <th>연락처</th>
-                            <th>소속 구분</th>
-                            <th>차량 유형</th>
-                            <th>차량명</th>
-                            <th>상태</th>
-                            <th>관리</th>
+                            <th>�?�?�</th>
+                            <th>�?�청일�??</th>
+                            <th>�?��?�</th>
+                            <th>�?�락�?</th>
+                            <th>�??�?� 구�?</th>
+                            <th>차�?? �?��??</th>
+                            <th>차�??�?</th>
+                            <th>�?��??</th>
+                            <th>�?리</th>
                         </tr>
                     </thead>
                     <tbody id="inquiriesTableBody">
                         <tr>
-                            <td colspan="9" class="loading">데이터를 불러오는 중...</td>
+                            <td colspan="9" class="loading">데이�?�를 �?�?��?��?? �?...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <div class="pagination" id="pagination">
-                <!-- 페이지네이션 버튼이 여기에 동적으로 생성됩니다 -->
+                <!-- �??이�?�?�이�?? �?�?�이 �?�기�?� �?적�?��? �?��?�됩�??�?� -->
             </div>
         </div>
 
-        <!-- IP 차단 관리 -->
+        <!-- IP 차�?� �?리 -->
         <div class="page-content" id="ipblockPage">
-            <p class="ipblock-lead">수집된 문의·IP 목록입니다. <strong>차단하기</strong>를 누르면 해당 IP가 즉시 차단됩니다.</p>
+            <p class="ipblock-lead">�??�?�? 문�?·IP 목록�??�??�?�. <strong>차�?��??기</strong> / <strong>차�?��?��?</strong>�? IP를 �?리�?� �?? �??�?��??�?�.</p>
             <div class="table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>접수일시</th>
-                            <th>성함</th>
-                            <th>연락처</th>
-                            <th>차종</th>
+                            <th>�?�??일�??</th>
+                            <th>�?��?�</th>
+                            <th>�?�락�?</th>
+                            <th>차�?</th>
                             <th>IP</th>
-                            <th>차단</th>
+                            <th>�?��??</th>
+                            <th>�?리</th>
                         </tr>
                     </thead>
                     <tbody id="ipblockListBody">
-                        <tr><td colspan="6" class="loading">불러오는 중...</td></tr>
+                        <tr><td colspan="7" class="loading">�?�?��?��?? �?...</td></tr>
                     </tbody>
                 </table>
             </div>
             <div class="pagination" id="ipblockPagination"></div>
+
+            <h3 class="ipblock-subtitle">차�?��? IP</h3>
+            <div class="table-container ipblock-blocked-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>IP</th>
+                            <th>�?��?�</th>
+                            <th>차�?�일�??</th>
+                            <th>�?리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ipblockBlockedBody">
+                        <tr><td colspan="4" class="loading">�?�?��?��?? �?...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- 고객후기 관리 페이지 -->
+                <!-- 고객�??기 �?리 �??이�? -->
         <div class="page-content" id="reviewsPage">
             <div class="reviews-management">
                 <div class="reviews-header">
                     <div class="reviews-stats">
                         <span class="stat-item">
-                            <span class="stat-label">전체</span>
+                            <span class="stat-label">�?체</span>
                             <span class="stat-value" id="totalReviews">0</span>
                         </span>
                         <span class="stat-item">
-                            <span class="stat-label">활성</span>
+                            <span class="stat-label">�??�?�</span>
                             <span class="stat-value active" id="activeReviews">0</span>
                         </span>
                         <span class="stat-item">
-                            <span class="stat-label">비활성</span>
+                            <span class="stat-label">�?�??�?�</span>
                             <span class="stat-value inactive" id="inactiveReviews">0</span>
                         </span>
                     </div>
                     <button class="btn-primary" id="addReviewBtn">
-                        <span>+</span> 고객후기 추가
+                        <span>+</span> 고객�??기 �?�?
                     </button>
                 </div>
                 
                 <div class="reviews-grid" id="reviewsList">
-                    <div class="loading">데이터를 불러오는 중...</div>
+                    <div class="loading">데이�?�를 �?�?��?��?? �?...</div>
                 </div>
             </div>
         </div>
 
-        <!-- 비밀번호 변경 페이지 -->
+        <!-- �?�?�?�?� �?경 �??이�? -->
         <div class="page-content" id="passwordPage">
             <div class="password-change-container">
-                <h3>비밀번호 변경</h3>
+                <h3>�?�?�?�?� �?경</h3>
                 <form id="passwordChangeForm" class="password-form">
                     <div class="form-group">
-                        <label for="currentPassword">현재 비밀번호</label>
+                        <label for="currentPassword">�??�?� �?�?�?�?�</label>
                         <input type="password" id="currentPassword" name="currentPassword" required>
                     </div>
                     <div class="form-group">
-                        <label for="newPassword">새 비밀번호</label>
+                        <label for="newPassword">�?? �?�?�?�?�</label>
                         <input type="password" id="newPassword" name="newPassword" required>
                     </div>
                     <div class="form-group">
-                        <label for="confirmPassword">새 비밀번호 확인</label>
+                        <label for="confirmPassword">�?? �?�?�?�?� �??인</label>
                         <input type="password" id="confirmPassword" name="confirmPassword" required>
                     </div>
-                    <button type="submit" class="btn-primary">비밀번호 변경</button>
+                    <button type="submit" class="btn-primary">�?�?�?�?� �?경</button>
                     <div id="passwordMessage" class="password-message"></div>
                 </form>
             </div>
         </div>
     </main>
 
-    <!-- 고객후기 추가/수정 모달 -->
+    <!-- 고객�??기 �?�?/�??�? 모�?� -->
     <div class="modal" id="reviewModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="reviewModalTitle">고객후기 추가</h3>
+                <h3 id="reviewModalTitle">고객�??기 �?�?</h3>
                 <button class="modal-close" id="closeReviewModal">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="reviewForm" class="review-form">
                     <div class="form-group">
                         <label for="reviewImages">
-                            <span>이미지 업로드</span>
-                            <span class="required-badge">필수</span>
+                            <span>이미�? �??�?�??</span>
+                            <span class="required-badge">�??�??</span>
                         </label>
                         <div class="file-upload-area" id="fileUploadArea">
                             <input type="file" id="reviewImages" accept="image/*" multiple>
@@ -178,65 +196,65 @@
                                     <polyline points="17 8 12 3 7 8"></polyline>
                                     <line x1="12" y1="3" x2="12" y2="15"></line>
                                 </svg>
-                                <p>이미지를 드래그하거나 클릭하여 선택 (3~5장)</p>
-                                <small>첫 번째 사진이 대표이미지, PNG/JPG/GIF 각 5MB 이하</small>
+                                <p>이미�?를 �??�??그�??거�?? 클릭�??�?� �?��?� (3~5�?�)</p>
+                                <small>첫 �?째 �?��?이 �??�??이미�?, PNG/JPG/GIF 각 5MB 이�??</small>
                             </div>
                         </div>
                         <div class="image-preview multi-preview" id="imagePreview"></div>
                     </div>
                     <div class="form-group">
                         <label for="reviewTitle">
-                            <span>후기 타이틀</span>
-                            <span class="optional-badge">선택</span>
+                            <span>�??기 �??이�??</span>
+                            <span class="optional-badge">�?��?�</span>
                         </label>
-                        <input type="text" id="reviewTitle" placeholder="후기 제목을 입력하세요 (선택사항)">
+                        <input type="text" id="reviewTitle" placeholder="�??기 �?목�? �??력�??�?��?? (�?��?��?��?�)">
                     </div>
                     <div class="form-group">
                         <label for="reviewText">
-                            <span>후기 설명</span>
-                            <span class="optional-badge">선택</span>
+                            <span>�??기 �?��?</span>
+                            <span class="optional-badge">�?��?�</span>
                         </label>
-                        <textarea id="reviewText" rows="4" placeholder="고객후기 설명을 입력하세요 (선택사항)"></textarea>
-                        <small>텍스트를 입력하지 않으면 이미지만 표시됩니다</small>
+                        <textarea id="reviewText" rows="4" placeholder="고객�??기 �?��?�? �??력�??�?��?? (�?��?��?��?�)"></textarea>
+                        <small>�?��?��?�를 �??력�??�? �??�?�면 이미�?�? �??�??됩�??�?�</small>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="reviewOrder">표시 순서</label>
+                            <label for="reviewOrder">�??�?? �??�??</label>
                             <input type="number" id="reviewOrder" value="0" min="0">
-                            <small>숫자가 작을수록 먼저 표시</small>
+                            <small>�?��?��? �??�?�??록 먼�? �??�??</small>
                         </div>
                         <div class="form-group">
-                            <label for="reviewActive">상태</label>
+                            <label for="reviewActive">�?��??</label>
                             <div class="toggle-switch">
                                 <input type="checkbox" id="reviewActive" checked>
                                 <label for="reviewActive" class="toggle-label">
                                     <span class="toggle-slider"></span>
-                                    <span class="toggle-text">활성화</span>
+                                    <span class="toggle-text">�??�?��??</span>
                                 </label>
                             </div>
-                            <small>비활성화 시 사이트에 표시되지 않습니다</small>
+                            <small>�?�??�?��?? �?? �?�이�?��?� �??�??�?�? �??�?��??�?�</small>
                         </div>
                     </div>
                     <input type="hidden" id="reviewId">
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" id="cancelReviewBtn">취소</button>
-                <button class="btn-primary" id="saveReviewBtn">저장</button>
+                <button class="btn-secondary" id="cancelReviewBtn">취�??</button>
+                <button class="btn-primary" id="saveReviewBtn">�?�?�</button>
             </div>
         </div>
     </div>
 
-    <!-- 알림 모달 (성공/오류/안내) -->
+    <!-- �??림 모�?� (�?�공/�?��?/�??�?�) -->
     <div class="modal message-modal" id="messageModal">
         <div class="modal-content message-modal-content">
             <div class="message-modal-icon" id="messageModalIcon"></div>
             <p class="message-modal-text" id="messageModalText"></p>
-            <button type="button" class="btn-primary message-modal-btn" id="messageModalBtn">확인</button>
+            <button type="button" class="btn-primary message-modal-btn" id="messageModalBtn">�??인</button>
         </div>
     </div>
 
-    <!-- 확인 모달 (삭제 등 확인용) -->
+    <!-- �??인 모�?� (�?��? �?� �??인�?�) -->
     <div class="modal confirm-modal" id="confirmModal">
         <div class="modal-content confirm-modal-content">
             <div class="confirm-modal-icon" id="confirmModalIcon">
@@ -246,28 +264,28 @@
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
             </div>
-            <h3 class="confirm-modal-title" id="confirmModalTitle">확인</h3>
+            <h3 class="confirm-modal-title" id="confirmModalTitle">�??인</h3>
             <p class="confirm-modal-text" id="confirmModalText"></p>
             <div class="confirm-modal-actions">
-                <button type="button" class="btn-secondary" id="confirmModalCancel">취소</button>
-                <button type="button" class="btn-primary btn-danger" id="confirmModalConfirm">확인</button>
+                <button type="button" class="btn-secondary" id="confirmModalCancel">취�??</button>
+                <button type="button" class="btn-primary btn-danger" id="confirmModalConfirm">�??인</button>
             </div>
         </div>
     </div>
 
-    <!-- 상세 정보 모달 -->
+    <!-- �?��?� �?보 모�?� -->
     <div class="modal" id="detailModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>문의 상세 정보</h3>
+                <h3>문�? �?��?� �?보</h3>
                 <button class="modal-close" id="closeModal">&times;</button>
             </div>
             <div class="modal-body" id="modalBody">
-                <!-- 상세 정보가 여기에 동적으로 생성됩니다 -->
+                <!-- �?��?� �?보�? �?�기�?� �?적�?��? �?��?�됩�??�?� -->
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" id="cancelBtn">취소</button>
-                <button class="btn-primary" id="saveBtn">저장</button>
+                <button class="btn-secondary" id="cancelBtn">취�??</button>
+                <button class="btn-primary" id="saveBtn">�?�?�</button>
             </div>
         </div>
     </div>
