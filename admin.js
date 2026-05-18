@@ -70,8 +70,22 @@ function initEventListeners() {
 
     // 새로고침 버튼
     document.getElementById('refreshBtn').addEventListener('click', function() {
-        loadInquiries();
+        const activeNav = document.querySelector('.nav-item.active');
+        const page = activeNav && activeNav.dataset.page ? activeNav.dataset.page : 'inquiries';
+        if (page === 'ipblock') loadIpBlockData();
+        else if (page === 'reviews') loadReviews();
+        else loadInquiries();
     });
+
+    const blockIpForm = document.getElementById('blockIpForm');
+    if (blockIpForm) {
+        blockIpForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ip = document.getElementById('blockIpInput').value.trim();
+            const reason = document.getElementById('blockIpReason').value.trim();
+            blockIpAddress(ip, reason);
+        });
+    }
 
     // 검색 및 필터
     document.getElementById('searchInput').addEventListener('input', function() {
@@ -222,6 +236,7 @@ function switchPage(page) {
     // 페이지 제목 업데이트
     const titles = {
         'inquiries': '문의 리스트',
+        'ipblock': 'IP 차단 관리',
         'reviews': '고객후기 관리',
         'password': '비밀번호 변경'
     };
@@ -230,8 +245,181 @@ function switchPage(page) {
     // 페이지별 초기화
     if (page === 'reviews') {
         loadReviews();
+    } else if (page === 'ipblock') {
+        loadIpBlockData();
     }
 }
+
+let ipBlockData = { blocked: [], inquiry_ips: [], inquiry_records: [] };
+
+async function loadIpBlockData() {
+    const blockedBody = document.getElementById('blockedIpsTableBody');
+    const inquiryBody = document.getElementById('inquiryIpsTableBody');
+    const recordsBody = document.getElementById('inquiryRecordsTableBody');
+    if (!blockedBody || !inquiryBody || !recordsBody) return;
+
+    blockedBody.innerHTML = '<tr><td colspan="4" class="loading">불러오는 중...</td></tr>';
+    inquiryBody.innerHTML = '<tr><td colspan="5" class="loading">불러오는 중...</td></tr>';
+    recordsBody.innerHTML = '<tr><td colspan="7" class="loading">불러오는 중...</td></tr>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/blocked-ips`);
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || '불러오기 실패');
+        }
+        ipBlockData = data;
+        renderBlockedIpsTable();
+        renderInquiryRecordsTable();
+        renderInquiryIpsTable();
+    } catch (error) {
+        console.error('loadIpBlockData:', error);
+        blockedBody.innerHTML = '<tr><td colspan="4" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
+        inquiryBody.innerHTML = '<tr><td colspan="5" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
+        if (recordsBody) recordsBody.innerHTML = '<tr><td colspan="7" class="loading">데이터를 불러오지 못했습니다.</td></tr>';
+        showError('IP 목록을 불러오지 못했습니다. D1에 sql/blocked_ips.sql 실행이 필요할 수 있습니다.');
+    }
+}
+
+function renderBlockedIpsTable() {
+    const tbody = document.getElementById('blockedIpsTableBody');
+    const list = ipBlockData.blocked || [];
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="loading">차단된 IP가 없습니다.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = list.map((row) => `
+        <tr>
+            <td><code>${escapeHtml(row.ip_address)}</code></td>
+            <td>${escapeHtml(row.reason || '-')}</td>
+            <td>${formatKoreanDateTime(row.created_at)}</td>
+            <td>
+                <button type="button" class="btn-action" onclick="unblockIpAddress(${JSON.stringify(row.ip_address)})">차단 해제</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderInquiryRecordsTable() {
+    const tbody = document.getElementById('inquiryRecordsTableBody');
+    if (!tbody) return;
+    const list = ipBlockData.inquiry_records || [];
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">등록된 문의가 없습니다.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = list.map((row) => {
+        const ipCell = row.client_ip
+            ? `<code>${escapeHtml(row.client_ip)}</code>`
+            : '<span class="ip-missing">미기록</span>';
+        const status = !row.client_ip
+            ? '<span class="status-badge processing">IP 없음</span>'
+            : row.is_blocked
+                ? '<span class="status-badge completed">차단됨</span>'
+                : '<span class="status-badge new">정상</span>';
+        let action = '<span class="ip-missing">—</span>';
+        if (row.client_ip) {
+            action = row.is_blocked
+                ? `<button type="button" class="btn-action" onclick="unblockIpAddress(${JSON.stringify(row.client_ip)})">차단 해제</button>`
+                : `<button type="button" class="btn-action btn-delete" onclick="blockIpAddress(${JSON.stringify(row.client_ip)}, ${JSON.stringify('문의 #' + row.id)})">차단</button>`;
+        }
+        return `
+        <tr>
+            <td>${formatKoreanDateTime(row.created_at)}</td>
+            <td>${escapeHtml(row.name || '-')}</td>
+            <td>${escapeHtml(row.phone || '-')}</td>
+            <td>${escapeHtml(row.car_name || '-')}</td>
+            <td>${ipCell}</td>
+            <td>${status}</td>
+            <td>${action}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderInquiryIpsTable() {
+    const tbody = document.getElementById('inquiryIpsTableBody');
+    const list = ipBlockData.inquiry_ips || [];
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="loading">수집된 IP가 없습니다. 문의 접수 후 표시됩니다.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = list.map((row) => {
+        const ipEsc = escapeHtml(row.ip_address);
+        const status = row.is_blocked
+            ? '<span class="status-badge completed">차단됨</span>'
+            : '<span class="status-badge new">정상</span>';
+        const action = row.is_blocked
+            ? `<button type="button" class="btn-action" onclick="unblockIpAddress(${JSON.stringify(row.ip_address)})">차단 해제</button>`
+            : `<button type="button" class="btn-action btn-delete" onclick="blockIpAddress(${JSON.stringify(row.ip_address)}, '문의 IP 목록에서 차단')">차단</button>`;
+        return `
+        <tr>
+            <td><code>${ipEsc}</code></td>
+            <td>${row.inquiry_count || 0}</td>
+            <td>${formatKoreanDateTime(row.last_seen)}</td>
+            <td>${status}</td>
+            <td>${action}</td>
+        </tr>`;
+    }).join('');
+}
+
+async function blockIpAddress(ip, reason) {
+    if (!ip) {
+        showError('IP 주소를 입력해주세요.');
+        return;
+    }
+    try {
+        const response = await fetch(`${API_BASE_URL}/blocked-ips`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip, reason: reason || null }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            showError(data.error || 'IP 차단에 실패했습니다.');
+            return;
+        }
+        showMessageModal('IP가 차단되었습니다.', 'success');
+        const ipInput = document.getElementById('blockIpInput');
+        const reasonInput = document.getElementById('blockIpReason');
+        if (ipInput) ipInput.value = '';
+        if (reasonInput) reasonInput.value = '';
+        loadIpBlockData();
+    } catch (error) {
+        console.error('blockIpAddress:', error);
+        showError('IP 차단 중 오류가 발생했습니다.');
+    }
+}
+
+async function unblockIpAddress(ip) {
+    if (!ip) return;
+    showConfirmModal({
+        title: 'IP 차단 해제',
+        message: `${ip} 차단을 해제하시겠습니까?`,
+        confirmText: '해제',
+        cancelText: '취소',
+        danger: false,
+        onConfirm: async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/blocked-ips?ip=${encodeURIComponent(ip)}`, {
+                    method: 'DELETE',
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    showError(data.error || '차단 해제에 실패했습니다.');
+                    return;
+                }
+                showMessageModal('IP 차단이 해제되었습니다.', 'success');
+                loadIpBlockData();
+            } catch (error) {
+                console.error('unblockIpAddress:', error);
+                showError('차단 해제 중 오류가 발생했습니다.');
+            }
+        },
+    });
+}
+
+window.blockIpAddress = blockIpAddress;
+window.unblockIpAddress = unblockIpAddress;
 
 // 문의 목록 불러오기
 async function loadInquiries() {
@@ -404,6 +592,15 @@ async function showDetail(id) {
                     <div class="detail-label">차량명</div>
                     <div class="detail-value">${escapeHtml(inquiry.car_name || '-')}</div>
                 </div>
+                ${inquiry.client_ip ? `
+                <div class="detail-item">
+                    <div class="detail-label">접수 IP</div>
+                    <div class="detail-value">
+                        <code>${escapeHtml(inquiry.client_ip)}</code>
+                        <button type="button" class="btn-action btn-delete" style="margin-top:8px" onclick="blockIpAddress(${JSON.stringify(inquiry.client_ip)}, ${JSON.stringify('문의 #' + inquiry.id)})">이 IP 차단</button>
+                    </div>
+                </div>
+                ` : ''}
                 <div class="detail-item">
                     <div class="detail-label">상태</div>
                     <div class="detail-value">

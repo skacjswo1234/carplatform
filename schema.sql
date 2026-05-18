@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
     wr_7 TEXT,
     wr_3 TEXT,
     wr_4 TEXT,
+    client_ip TEXT,
     status TEXT DEFAULT 'new',
     memo TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -40,6 +41,16 @@ CREATE TABLE IF NOT EXISTS inquiry_limits (
 -- IP 주소 인덱스 생성 (빠른 조회를 위해)
 CREATE INDEX IF NOT EXISTS idx_ip_address ON inquiry_limits(ip_address);
 CREATE INDEX IF NOT EXISTS idx_last_inquiry_at ON inquiry_limits(last_inquiry_at);
+
+-- IP 영구 차단 (관리자 등록)
+CREATE TABLE IF NOT EXISTS blocked_ips (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_address TEXT NOT NULL UNIQUE,
+    reason TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_blocked_ips_address ON blocked_ips(ip_address);
 
 -- 고객후기 테이블 생성
 CREATE TABLE IF NOT EXISTS reviews (

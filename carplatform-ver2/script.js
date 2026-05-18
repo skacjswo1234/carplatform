@@ -110,6 +110,10 @@ async function saveInquiry(name, phone, carName) {
         
         if (limitCheck.ok) {
             const limitResult = await limitCheck.json();
+            if (limitResult.blocked || limitResult.error === 'IP_BLOCKED') {
+                showAlertModal(limitResult.message || '문의 접수가 제한된 연결입니다.');
+                return false;
+            }
             if (!limitResult.allowed) {
                 showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
                 return false;
@@ -181,8 +185,12 @@ async function saveInquiry(name, phone, carName) {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            if (errorData.error === 'IP_BLOCKED') {
+                showAlertModal(errorData.message || '문의 접수가 제한된 연결입니다.');
+                return false;
+            }
             if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
-                showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
+                showAlertModal(errorData.message || '문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
                 return false;
             }
             if (response.status === 400 && errorData.error) {

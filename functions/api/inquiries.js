@@ -1,3 +1,5 @@
+import { isIpBlocked, ensureBlockedIpsTable } from '../lib/ip-block.js';
+
 // SQL 인젝션 방지 함수
 function sanitizeInput(value) {
   if (!value || typeof value !== 'string') return value;
@@ -313,20 +315,39 @@ export async function onRequestGet(context) {
   try {
     const db = env['carplatform-db'];
 
-    const result = await db.prepare(`
-      SELECT 
-        id,
-        wr_name as name,
-        wr_subject as phone,
-        wr_7 as affiliation,
-        wr_3 as vehicle_type,
-        wr_4 as car_name,
-        status,
-        memo,
-        created_at
-      FROM inquiries
-      ORDER BY created_at DESC
-    `).all();
+    let result;
+    try {
+      result = await db.prepare(`
+        SELECT 
+          id,
+          wr_name as name,
+          wr_subject as phone,
+          wr_7 as affiliation,
+          wr_3 as vehicle_type,
+          wr_4 as car_name,
+          client_ip,
+          status,
+          memo,
+          created_at
+        FROM inquiries
+        ORDER BY created_at DESC
+      `).all();
+    } catch (_) {
+      result = await db.prepare(`
+        SELECT 
+          id,
+          wr_name as name,
+          wr_subject as phone,
+          wr_7 as affiliation,
+          wr_3 as vehicle_type,
+          wr_4 as car_name,
+          status,
+          memo,
+          created_at
+        FROM inquiries
+        ORDER BY created_at DESC
+      `).all();
+    }
 
     return new Response(JSON.stringify({
       success: true,
@@ -357,11 +378,28 @@ export async function onRequestPost(context) {
   
   try {
     const body = await request.json();
-    let { name, phone, affiliation, vehicle_type, car_name, ip } = body;
+    let { name, phone, affiliation, vehicle_type, car_name, ip: bodyIp } = body;
 
-    // IP 주소 가져오기
-    if (!ip || ip === 'unknown') {
-      ip = getClientIP(request);
+    const serverIp = getClientIP(request);
+    const ip = serverIp && serverIp !== 'unknown'
+      ? serverIp
+      : (bodyIp && String(bodyIp).trim() && String(bodyIp).trim() !== 'unknown' ? String(bodyIp).trim() : 'unknown');
+
+    const db = env['carplatform-db'];
+    await ensureBlockedIpsTable(db);
+
+    if (ip && ip !== 'unknown' && (await isIpBlocked(db, ip))) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'IP_BLOCKED',
+        message: '문의 접수가 제한된 연결입니다. 문의가 필요하시면 전화로 연락해 주세요.',
+      }), {
+        status: 403,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
     }
 
     // SQL 인젝션 검증
@@ -549,12 +587,13 @@ export async function onRequestPost(context) {
       });
     }
 
-    const db = env['carplatform-db'];
-
-    // IP 기반 제한 체크
-    const limitCheck = (env && env.INQUIRY_LIMITS_KV)
-      ? await checkIPLimitKV(env.INQUIRY_LIMITS_KV, ip)
-      : await checkIPLimit(db, ip);
+    // IP 기반 24시간 1회 제한
+    let limitCheck = { allowed: true, count: 0, hoursRemaining: null, retry_after_sec: null };
+    if (ip && ip !== 'unknown') {
+      limitCheck = (env && env.INQUIRY_LIMITS_KV)
+        ? await checkIPLimitKV(env.INQUIRY_LIMITS_KV, ip)
+        : await checkIPLimit(db, ip);
+    }
     if (!limitCheck.allowed) {
       return new Response(JSON.stringify({
         success: false,
@@ -571,11 +610,19 @@ export async function onRequestPost(context) {
 
     const kstDateTime = getKSTDateTime();
 
-    // 데이터 저장 (Prepared Statement 사용으로 SQL 인젝션 방지)
-    const result = await db.prepare(`
-      INSERT INTO inquiries (wr_name, wr_subject, wr_7, wr_3, wr_4, status, created_at)
-      VALUES (?, ?, ?, ?, ?, 'new', ?)
-    `).bind(sanitizedName, phoneNumber, sanitizedAffiliation, sanitizedVehicleType, sanitizedCarName || null, kstDateTime).run();
+    let result;
+    const clientIp = ip && ip !== 'unknown' ? ip : null;
+    try {
+      result = await db.prepare(`
+        INSERT INTO inquiries (wr_name, wr_subject, wr_7, wr_3, wr_4, client_ip, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'new', ?)
+      `).bind(sanitizedName, phoneNumber, sanitizedAffiliation, sanitizedVehicleType, sanitizedCarName || null, clientIp, kstDateTime).run();
+    } catch (_) {
+      result = await db.prepare(`
+        INSERT INTO inquiries (wr_name, wr_subject, wr_7, wr_3, wr_4, status, created_at)
+        VALUES (?, ?, ?, ?, ?, 'new', ?)
+      `).bind(sanitizedName, phoneNumber, sanitizedAffiliation, sanitizedVehicleType, sanitizedCarName || null, kstDateTime).run();
+    }
 
     if (result.success) {
       // IP 제한 기록 업데이트 (KV 우선)

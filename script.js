@@ -551,8 +551,11 @@ async function saveInquiry() {
         
         if (limitCheck.ok) {
             const limitResult = await limitCheck.json();
+            if (limitResult.blocked || limitResult.error === 'IP_BLOCKED') {
+                showAlertModal(limitResult.message || '문의 접수가 제한된 연결입니다.');
+                return false;
+            }
             if (!limitResult.allowed) {
-                // 24시간 내 이미 문의한 IP인 경우: 완료 모달 대신 안내 모달만 표시
                 showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
                 return false;
             }
@@ -618,9 +621,12 @@ async function saveInquiry() {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            if (errorData.error === 'IP_BLOCKED') {
+                showAlertModal(errorData.message || '문의 접수가 제한된 연결입니다.');
+                return false;
+            }
             if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
-                // 서버 측 IP 제한에 걸린 경우
-                showAlertModal('문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
+                showAlertModal(errorData.message || '문의가 이미 접수되었습니다.\n24시간 후 다시 시도해주세요.');
                 return false;
             }
             if (response.status === 400 && errorData.error) {

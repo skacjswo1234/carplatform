@@ -1381,6 +1381,67 @@ body {
     margin-bottom: 16px;
 }
 
+/* IP 차단 관리 */
+.ipblock-section {
+    background: var(--card-bg, #fff);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.ipblock-heading {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+}
+
+.ipblock-desc {
+    margin: 0 0 16px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.ipblock-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.ipblock-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.ipblock-form input {
+    min-width: 200px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+}
+
+.ip-missing {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.ipblock-records-wrap {
+    max-height: 480px;
+    overflow: auto;
+}
+
+#ipblockPage code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.9em;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
 /* 모바일 반응형 */
 @media (max-width: 768px) {
     .reviews-header {

@@ -1,4 +1,5 @@
 // IP 기반 제한 체크 API
+import { isIpBlocked, ensureBlockedIpsTable } from '../../lib/ip-block.js';
 
 // IP 주소 가져오기
 function getClientIP(request) {
@@ -115,11 +116,27 @@ export async function onRequestPost(context) {
       });
     }
 
+    const db = env['carplatform-db'];
+    await ensureBlockedIpsTable(db);
+    if (await isIpBlocked(db, ip)) {
+      return new Response(JSON.stringify({
+        success: true,
+        allowed: false,
+        blocked: true,
+        error: 'IP_BLOCKED',
+        message: '문의 접수가 제한된 연결입니다.',
+      }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
     let limitCheck;
     if (env && env.INQUIRY_LIMITS_KV) {
       limitCheck = await checkIPLimitKV(env.INQUIRY_LIMITS_KV, ip);
     } else {
-      const db = env['carplatform-db'];
       limitCheck = await checkIPLimitD1(db, ip);
     }
 
