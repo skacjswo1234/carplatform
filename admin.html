@@ -81,88 +81,26 @@
         </div>
 
         <!-- IP 차단 관리 -->
-        <div class="page-content ipblock-page" id="ipblockPage">
-            <div class="ipblock-section ipblock-section-compact">
-                <h3 class="ipblock-heading">IP 직접 차단</h3>
-                <p class="ipblock-desc">장난·스팸 문의 IP를 등록하면 해당 IP에서는 문의 접수가 영구적으로 차단됩니다. (24시간 제한과 별도)</p>
-                <form class="ipblock-form" id="blockIpForm">
-                    <input type="text" id="blockIpInput" class="search-input" placeholder="예: 123.45.67.89">
-                    <input type="text" id="blockIpReason" class="search-input" placeholder="차단 사유 (선택)">
-                    <button type="submit" class="btn-primary">IP 차단 등록</button>
-                </form>
+        <div class="page-content" id="ipblockPage">
+            <p class="ipblock-lead">수집된 문의·IP 목록입니다. <strong>차단하기</strong>를 누르면 해당 IP가 즉시 차단됩니다.</p>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>접수일시</th>
+                            <th>성함</th>
+                            <th>연락처</th>
+                            <th>차종</th>
+                            <th>IP</th>
+                            <th>차단</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ipblockListBody">
+                        <tr><td colspan="6" class="loading">불러오는 중...</td></tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="ipblock-section ipblock-section-main">
-                <div class="ipblock-section-header">
-                    <div>
-                        <h3 class="ipblock-heading">문의 검토 · IP 차단</h3>
-                        <p class="ipblock-desc">문의 내용을 확인한 뒤 해당 IP를 차단하세요. 기존 접수 문의가 모두 포함됩니다.</p>
-                    </div>
-                    <div class="ipblock-view-tabs" role="tablist">
-                        <button type="button" class="ipblock-tab active" data-ipblock-view="list">문의 목록</button>
-                        <button type="button" class="ipblock-tab" data-ipblock-view="group">IP별 묶음</button>
-                    </div>
-                </div>
-                <div class="ipblock-toolbar">
-                    <input type="text" id="ipblockSearch" class="search-input" placeholder="성함, 연락처, 차종, IP 검색…">
-                    <select id="ipblockFilter" class="filter-select">
-                        <option value="all">전체</option>
-                        <option value="has_ip">IP 있음</option>
-                        <option value="no_ip">IP 미기록</option>
-                        <option value="not_blocked">미차단만</option>
-                        <option value="blocked">차단됨만</option>
-                    </select>
-                </div>
-                <div id="ipblockListView" class="ipblock-view-panel">
-                    <div class="table-container">
-                        <table class="data-table ipblock-table">
-                            <thead>
-                                <tr>
-                                    <th class="col-no">번호</th>
-                                    <th class="col-date">접수일시</th>
-                                    <th class="col-content">문의 내용</th>
-                                    <th class="col-ip">접수 IP</th>
-                                    <th class="col-status">상태</th>
-                                    <th class="col-action">관리</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inquiryRecordsTableBody">
-                                <tr><td colspan="6" class="loading">불러오는 중...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="ipblock-pagination-wrap">
-                        <p class="ipblock-page-info" id="ipblockPageInfo"></p>
-                        <div class="pagination" id="ipblockPagination"></div>
-                    </div>
-                </div>
-                <div id="ipblockGroupView" class="ipblock-view-panel" hidden>
-                    <div id="ipblockGroupList" class="ipblock-group-list">
-                        <p class="loading">불러오는 중...</p>
-                    </div>
-                    <div class="ipblock-pagination-wrap">
-                        <p class="ipblock-page-info" id="ipblockGroupPageInfo"></p>
-                        <div class="pagination" id="ipblockGroupPagination"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="ipblock-section ipblock-section-compact">
-                <h3 class="ipblock-heading">차단된 IP</h3>
-                <div class="table-container">
-                    <table class="data-table ipblock-table">
-                        <thead>
-                            <tr>
-                                <th>IP</th>
-                                <th>사유</th>
-                                <th>차단일시</th>
-                                <th>관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="blockedIpsTableBody">
-                            <tr><td colspan="4" class="loading">불러오는 중...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="pagination" id="ipblockPagination"></div>
         </div>
 
         <!-- 고객후기 관리 페이지 -->
