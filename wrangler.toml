@@ -7,6 +7,11 @@ binding = "carplatform-db"
 database_name = "carplatform-db"
 database_id = "459f61d7-bf8b-4b0a-8cc2-505ece4fb8b3"
 
+[[d1_databases]]
+binding = "carplatform-crm-db"
+database_name = "carplatform-crm-db"
+database_id = "018e66a8-c66e-4a6d-95d4-eb9d05fb700f"
+
 # R2 버킷 (고객후기 이미지) - carplatform-bucket 만 사용
 [[r2_buckets]]
 binding = "REVIEWS_BUCKET"

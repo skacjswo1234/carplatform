@@ -1,4 +1,5 @@
 import { isIpBlocked, ensureBlockedIpsTable } from '../lib/ip-block.js';
+import { getCrmDb, getCrmPhoneStatus, syncInquiryToCrm } from '../lib/crm-reentry.js';
 
 // SQL 인젝션 방지 함수
 function sanitizeInput(value) {
@@ -587,6 +588,27 @@ export async function onRequestPost(context) {
       });
     }
 
+    const crmDb = getCrmDb(env);
+    let crmPhoneStatus = { status: 'new' };
+
+    if (crmDb) {
+      crmPhoneStatus = await getCrmPhoneStatus(crmDb, phoneNumber);
+
+      if (crmPhoneStatus.status === 'blacklisted') {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'BLOCKED_PHONE',
+          message: '문의 접수가 제한된 연락처입니다.',
+        }), {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
+    }
+
     // IP 기반 24시간 1회 제한
     let limitCheck = { allowed: true, count: 0, hoursRemaining: null, retry_after_sec: null };
     if (ip && ip !== 'unknown') {
@@ -633,6 +655,20 @@ export async function onRequestPost(context) {
       }
       
       const inquiryId = result.meta.last_row_id;
+      const crmPayload = {
+        source_site: 'carplatform.shop',
+        external_id: String(inquiryId),
+        name: sanitizedName,
+        phone: phoneNumber,
+        route: sanitizedAffiliation || '',
+        finance: sanitizedVehicleType || '',
+        memo: sanitizedCarName || '',
+        vehicle_timing: sanitizedCarName || '',
+        registered_at: kstDateTime,
+      };
+
+      await syncInquiryToCrm(env, crmPhoneStatus, crmPayload);
+
       return new Response(JSON.stringify({
         success: true,
         id: inquiryId
