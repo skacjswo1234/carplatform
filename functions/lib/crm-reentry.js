@@ -18,15 +18,24 @@ export function normalizePhoneDigits(phone) {
   return digits;
 }
 
+export function formatPhoneDisplay(phone) {
+  const digits = normalizePhoneDigits(phone);
+  if (digits.length === 11) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  return digits;
+}
+
 function normalizedPhoneSql(column) {
   return `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${column}, '-', ''), ' ', ''), '.', ''), '(', ''), ')', '')`;
 }
 
-function formatLandingRoute(sourceSite, subRoute = '') {
+function formatLandingRoute(sourceSite) {
   const key = String(sourceSite || '').trim().toLowerCase().replace(/^www\./, '');
-  const label = LANDING_LABELS[key] || String(sourceSite || '').trim() || '-';
-  const sub = String(subRoute || '').trim();
-  return sub ? `${label} / ${sub}` : label;
+  return key || '-';
 }
 
 async function findPhoneRow(db, table, phoneDigits) {
@@ -63,12 +72,19 @@ async function getNextCustomerId(crmDb) {
   return Number(row?.maxId || 0) + 1;
 }
 
+async function getNextListNo(crmDb) {
+  const row = await crmDb.prepare('SELECT COALESCE(MAX(list_no), 0) AS maxNo FROM customers').first();
+  return Number(row?.maxNo || 0) + 1;
+}
+
 async function insertCustomerDirect(crmDb, payload) {
   const phoneDigits = normalizePhoneDigits(payload.phone);
-  const route = formatLandingRoute(payload.source_site, payload.route);
+  const phone = formatPhoneDisplay(phoneDigits);
+  const route = formatLandingRoute(payload.source_site);
   const registeredAt = payload.registered_at || new Date().toISOString().slice(0, 19).replace('T', ' ');
 
   const mIdx = await getNextCustomerId(crmDb);
+  const listNo = await getNextListNo(crmDb);
 
   await crmDb
     .prepare(`
@@ -79,9 +95,9 @@ async function insertCustomerDirect(crmDb, payload) {
     `)
     .bind(
       mIdx,
-      mIdx,
+      listNo,
       payload.name,
-      phoneDigits,
+      phone,
       route,
       payload.finance || null,
       payload.vehicle_timing || payload.memo || null,
@@ -94,7 +110,8 @@ async function insertCustomerDirect(crmDb, payload) {
 
 async function insertReentryDirect(crmDb, payload) {
   const phoneDigits = normalizePhoneDigits(payload.phone);
-  const route = formatLandingRoute(payload.source_site, payload.route);
+  const phone = formatPhoneDisplay(phoneDigits);
+  const route = formatLandingRoute(payload.source_site);
   const registeredAt = payload.registered_at || new Date().toISOString().slice(0, 19).replace('T', ' ');
 
   if (payload.external_id && payload.source_site) {
@@ -114,7 +131,7 @@ async function insertReentryDirect(crmDb, payload) {
         `)
         .bind(
           payload.name,
-          phoneDigits,
+          phone,
           route,
           payload.finance || '',
           payload.memo || '',
@@ -140,7 +157,7 @@ async function insertReentryDirect(crmDb, payload) {
       String(payload.external_id || ''),
       payload.source_site,
       payload.name,
-      phoneDigits,
+      phone,
       route,
       payload.finance || '',
       payload.memo || '',

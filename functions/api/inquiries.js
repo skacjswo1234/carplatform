@@ -660,7 +660,6 @@ export async function onRequestPost(context) {
         external_id: String(inquiryId),
         name: sanitizedName,
         phone: phoneNumber,
-        route: sanitizedAffiliation || '',
         finance: sanitizedVehicleType || '',
         memo: sanitizedCarName || '',
         vehicle_timing: sanitizedCarName || '',
