@@ -108,15 +108,114 @@ async function insertCustomerDirect(crmDb, payload) {
   return { ok: true, method: 'd1', m_idx: mIdx };
 }
 
+async function moveCustomerToReentry(crmDb, phoneDigits, groupKey) {
+  const customer = await crmDb
+    .prepare(`SELECT * FROM customers WHERE ${normalizedPhoneSql('phone')} = ? LIMIT 1`)
+    .bind(phoneDigits)
+    .first();
+
+  if (!customer) {
+    return { moved: false };
+  }
+
+  const alreadyMoved = await crmDb
+    .prepare(`
+      SELECT id
+      FROM reentry_customers
+      WHERE record_type = 'existing'
+        AND customer_m_idx = ?
+      LIMIT 1
+    `)
+    .bind(customer.m_idx)
+    .first();
+
+  if (alreadyMoved) {
+    return { moved: false, reason: 'already_in_reentry' };
+  }
+
+  await crmDb
+    .prepare(`
+      INSERT INTO reentry_customers (
+        record_type,
+        customer_m_idx,
+        reentry_group_key,
+        list_no,
+        external_id,
+        source_site,
+        name,
+        phone,
+        route,
+        finance,
+        memo,
+        vehicle_timing,
+        manager,
+        manager_account_id,
+        status,
+        registered_at,
+        raw_json,
+        imported_at
+      ) VALUES (
+        'existing',
+        ?,
+        ?,
+        ?,
+        '',
+        '',
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        CURRENT_TIMESTAMP
+      )
+    `)
+    .bind(
+      customer.m_idx,
+      groupKey,
+      customer.list_no,
+      customer.name,
+      customer.phone,
+      customer.route,
+      customer.finance,
+      customer.memo || '',
+      customer.vehicle_timing,
+      customer.manager,
+      customer.manager_account_id,
+      customer.status,
+      customer.registered_at,
+      JSON.stringify({ moved_from: 'customers', customer }),
+    )
+    .run();
+
+  await crmDb.prepare('DELETE FROM customers WHERE m_idx = ?').bind(customer.m_idx).run();
+
+  return { moved: true, customer_m_idx: customer.m_idx };
+}
+
 async function insertReentryDirect(crmDb, payload) {
   const phoneDigits = normalizePhoneDigits(payload.phone);
   const phone = formatPhoneDisplay(phoneDigits);
   const route = formatLandingRoute(payload.source_site);
   const registeredAt = payload.registered_at || new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const groupKey = phoneDigits;
+  let inquiryId;
+  let action = 'created';
 
   if (payload.external_id && payload.source_site) {
     const existing = await crmDb
-      .prepare('SELECT id FROM reentry_customers WHERE source_site = ? AND external_id = ?')
+      .prepare(`
+        SELECT id
+        FROM reentry_customers
+        WHERE source_site = ?
+          AND external_id = ?
+          AND COALESCE(record_type, 'inquiry') = 'inquiry'
+      `)
       .bind(payload.source_site, String(payload.external_id))
       .first();
 
@@ -126,6 +225,7 @@ async function insertReentryDirect(crmDb, payload) {
           UPDATE reentry_customers
           SET name = ?, phone = ?, route = ?, finance = ?, memo = ?, vehicle_timing = ?,
               registered_at = COALESCE(NULLIF(?, ''), registered_at),
+              reentry_group_key = COALESCE(NULLIF(reentry_group_key, ''), ?),
               raw_json = ?, imported_at = CURRENT_TIMESTAMP
           WHERE id = ?
         `)
@@ -137,37 +237,65 @@ async function insertReentryDirect(crmDb, payload) {
           payload.memo || '',
           payload.vehicle_timing || payload.memo || '',
           registeredAt,
+          groupKey,
           JSON.stringify(payload),
           existing.id,
         )
         .run();
 
-      return { ok: true, method: 'd1', action: 'updated', id: existing.id };
+      inquiryId = existing.id;
+      action = 'updated';
     }
   }
 
-  const result = await crmDb
-    .prepare(`
-      INSERT INTO reentry_customers (
-        external_id, source_site, name, phone, route, finance, memo,
-        vehicle_timing, registered_at, raw_json, imported_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP), ?, CURRENT_TIMESTAMP)
-    `)
-    .bind(
-      String(payload.external_id || ''),
-      payload.source_site,
-      payload.name,
-      phone,
-      route,
-      payload.finance || '',
-      payload.memo || '',
-      payload.vehicle_timing || payload.memo || '',
-      registeredAt,
-      JSON.stringify(payload),
-    )
-    .run();
+  if (!inquiryId) {
+    const result = await crmDb
+      .prepare(`
+        INSERT INTO reentry_customers (
+          record_type,
+          reentry_group_key,
+          external_id,
+          source_site,
+          name,
+          phone,
+          route,
+          finance,
+          memo,
+          vehicle_timing,
+          registered_at,
+          raw_json,
+          imported_at
+        ) VALUES ('inquiry', ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CURRENT_TIMESTAMP), ?, CURRENT_TIMESTAMP)
+      `)
+      .bind(
+        groupKey,
+        String(payload.external_id || ''),
+        payload.source_site,
+        payload.name,
+        phone,
+        route,
+        payload.finance || '',
+        payload.memo || '',
+        payload.vehicle_timing || payload.memo || '',
+        registeredAt,
+        JSON.stringify(payload),
+      )
+      .run();
 
-  return { ok: true, method: 'd1', action: 'created', id: result.meta?.last_row_id };
+    inquiryId = result.meta?.last_row_id;
+  }
+
+  const moveResult = phoneDigits
+    ? await moveCustomerToReentry(crmDb, phoneDigits, groupKey)
+    : { moved: false };
+
+  return {
+    ok: true,
+    method: 'd1',
+    action,
+    id: inquiryId,
+    moved_existing: moveResult.moved === true,
+  };
 }
 
 async function postCrmIngest(env, url, payload) {
