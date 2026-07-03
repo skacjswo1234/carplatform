@@ -79,6 +79,11 @@ async function getNextListNo(crmDb) {
 
 async function insertCustomerDirect(crmDb, payload) {
   const phoneDigits = normalizePhoneDigits(payload.phone);
+
+  if (await findPhoneRow(crmDb, 'blacklist_customers', phoneDigits)) {
+    return { ok: false, skipped: true, reason: 'blacklisted' };
+  }
+
   const phone = formatPhoneDisplay(phoneDigits);
   const route = formatLandingRoute(payload.source_site);
   const registeredAt = payload.registered_at || new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -200,6 +205,11 @@ async function moveCustomerToReentry(crmDb, phoneDigits, groupKey) {
 
 async function insertReentryDirect(crmDb, payload) {
   const phoneDigits = normalizePhoneDigits(payload.phone);
+
+  if (await findPhoneRow(crmDb, 'blacklist_customers', phoneDigits)) {
+    return { ok: false, skipped: true, reason: 'blacklisted' };
+  }
+
   const phone = formatPhoneDisplay(phoneDigits);
   const route = formatLandingRoute(payload.source_site);
   const registeredAt = payload.registered_at || new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -366,6 +376,10 @@ export async function sendCustomerIngest(env, payload) {
 }
 
 export async function syncInquiryToCrm(env, crmPhoneStatus, payload) {
+  if (crmPhoneStatus?.status === 'blacklisted') {
+    return { ok: false, skipped: true, reason: 'blacklisted' };
+  }
+
   if (crmPhoneStatus?.status === 'reentry') {
     return sendReentryIngest(env, payload);
   }

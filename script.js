@@ -639,17 +639,17 @@ async function saveInquiry() {
         const result = await response.json();
         if (result.success) {
             console.log('문의가 성공적으로 저장되었습니다.');
+            if (!result.silenced) {
+                try {
+                    await sendInquiryToAppsScript(formData);
+                } catch (error) {
+                    console.warn('Apps Script 전송 오류:', error);
+                }
+            }
         }
     } catch (error) {
         console.error('Error saving inquiry:', error);
         // 저장 실패해도 완료 페이지는 보여줌 (IP 제한과 무관한 에러)
-    }
-
-    // Apps Script로 전송 (메일 + 시트 기록)
-    try {
-        await sendInquiryToAppsScript(formData);
-    } catch (error) {
-        console.warn('Apps Script 전송 오류:', error);
     }
 
     // 여기까지 왔으면 IP 제한에는 안 걸린 것으로 간주

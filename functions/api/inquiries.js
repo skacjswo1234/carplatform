@@ -596,11 +596,10 @@ export async function onRequestPost(context) {
 
       if (crmPhoneStatus.status === 'blacklisted') {
         return new Response(JSON.stringify({
-          success: false,
-          error: 'BLOCKED_PHONE',
-          message: '문의 접수가 제한된 연락처입니다.',
+          success: true,
+          silenced: true,
         }), {
-          status: 403,
+          status: 200,
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
