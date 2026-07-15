@@ -2,6 +2,9 @@
 let currentStep = 1;
 const totalSteps = 5;
 
+// 문의 제출 중복 방지 (클릭 즉시 잠금)
+let isInquirySubmitting = false;
+
 // SQL 인젝션 방지: SELECT, AND, SLEEP 키워드 및 특수문자 필터링
 function sanitizeInput(value) {
     if (!value || typeof value !== 'string') return value;
@@ -41,10 +44,28 @@ function validatePhoneInput(event) {
     return true;
 }
 
-function showLoadingOverlay(message = 'AI 견적 비교 중') {
-    const overlay = document.getElementById('loadingOverlay');
-    if (!overlay) return;
+function ensureLoadingOverlay() {
+    let overlay = document.getElementById('loadingOverlay');
+    if (overlay) return overlay;
 
+    overlay = document.createElement('div');
+    overlay.id = 'loadingOverlay';
+    overlay.className = 'loading-overlay hidden';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.setAttribute('aria-busy', 'true');
+    overlay.innerHTML =
+        '<div class="loading-box">' +
+            '<div class="loading-title">문의 접수 중입니다</div>' +
+            '<div class="loading-bar" aria-hidden="true"><div class="loading-bar-fill"></div></div>' +
+            '<div class="loading-sub" id="loadingText">처리 중...</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+    return overlay;
+}
+
+function showLoadingOverlay(message = 'AI 견적 비교 중') {
+    const overlay = ensureLoadingOverlay();
     const textEl = document.getElementById('loadingText');
     if (textEl) textEl.textContent = message;
 
@@ -66,6 +87,24 @@ function setStep5SubmitDisabled(disabled) {
 
     btn.classList.toggle('is-disabled', disabled);
     btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+}
+
+/** 문의 제출 시작: 즉시 로딩+잠금. 이미 제출 중이면 false */
+function beginInquirySubmit(message) {
+    if (isInquirySubmitting) return false;
+    isInquirySubmitting = true;
+    setStep5SubmitDisabled(true);
+    showLoadingOverlay(message || '문의 접수 중입니다');
+    return true;
+}
+
+/** 실패 시에만 잠금 해제. 성공 시에는 재제출 불가 유지 */
+function endInquirySubmit(unlock) {
+    hideLoadingOverlay();
+    if (unlock) {
+        isInquirySubmitting = false;
+        setStep5SubmitDisabled(false);
+    }
 }
 
 // 이미지/비디오 순차 재생 (비디오는 끝까지 재생 후 다음으로 전환)
@@ -410,6 +449,38 @@ function validateStep06() {
 
 // 다음 단계로 이동 (Validation 포함)
 async function nextButton() {
+    // Step 5(문의 신청): 클릭 즉시 로딩/잠금으로 중복 제출 차단
+    if (currentStep === 5) {
+        if (!beginInquirySubmit('AI 견적 비교 중')) {
+            return false;
+        }
+
+        if (!validateStep05()) {
+            endInquirySubmit(true);
+            return false;
+        }
+
+        let success = false;
+        try {
+            // AceCounter: 마지막 submit 직전(이름/연락처 validation 통과 후) 가상 페이지 수집
+            try { AM_PL('/FormSubmit'); } catch (e) {}
+            // 데이터 저장 (IP 제한 포함)
+            success = await saveInquiry();
+        } catch (e) {
+            success = false;
+        }
+
+        if (!success) {
+            endInquirySubmit(true);
+            return false;
+        }
+
+        // 성공 시 로딩만 닫고 버튼은 잠금 유지(재클릭 불가)
+        endInquirySubmit(false);
+        showCompletionModal();
+        return true;
+    }
+
     let isValid = true;
     
     // 현재 단계별 validation 체크
@@ -427,41 +498,11 @@ async function nextButton() {
         case 4:
             isValid = validateStep04();
             break;
-        case 5:
-            isValid = validateStep05();
-            break;
     }
     
     // Validation 실패 시 다음 단계로 이동하지 않음
     if (!isValid) {
         return false;
-    }
-    
-    // Step 5인 경우: 먼저 IP/입력값 체크 및 저장 시도 후, 성공한 경우에만 완료 모달 표시
-    if (currentStep === 5) {
-        setStep5SubmitDisabled(true);
-        showLoadingOverlay('AI 견적 비교 중');
-
-        let success = false;
-        try {
-            // AceCounter: 마지막 submit 직전(이름/연락처 validation 통과 후) 가상 페이지 수집
-            try { AM_PL('/FormSubmit'); } catch (e) {}
-            // 데이터 저장 (IP 제한 포함)
-            success = await saveInquiry();
-        } finally {
-            hideLoadingOverlay();
-            setStep5SubmitDisabled(false);
-        }
-
-        // IP 제한 또는 입력값 문제로 실패한 경우: 완료 모달 띄우지 않음
-        if (!success) {
-            return false;
-        }
-
-        // 정상적으로 저장된 경우에만 완료 모달 표시
-        showCompletionModal();
-
-        return true;
     }
     
     // Validation 통과 시 다음 단계로 이동

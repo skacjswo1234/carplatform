@@ -2156,6 +2156,14 @@ body {
 }
 
 /* 로딩 오버레이 */
+body.is-loading {
+    overflow: hidden;
+}
+
+body.is-loading .loading-overlay {
+    pointer-events: auto;
+}
+
 .loading-overlay {
     position: fixed;
     inset: 0;

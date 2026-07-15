@@ -31,22 +31,87 @@ async function getClientIP() {
     return 'unknown';
 }
 
+// 문의 제출 중복 방지 (클릭 즉시 잠금)
+let isInquirySubmitting = false;
+
+function ensureLoadingOverlay() {
+    let overlay = document.getElementById('loadingOverlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'loadingOverlay';
+    overlay.className = 'loading-overlay hidden';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.setAttribute('aria-busy', 'true');
+    overlay.innerHTML =
+        '<div class="loading-box">' +
+            '<div class="loading-title">문의 접수 중입니다</div>' +
+            '<div class="loading-bar" aria-hidden="true"><div class="loading-bar-fill"></div></div>' +
+            '<div class="loading-sub" id="loadingText">처리 중...</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+    return overlay;
+}
+
 // 로딩 오버레이 표시/숨김
 function showLoadingOverlay(message = '처리 중...') {
-    const overlay = document.getElementById('loadingOverlay');
+    const overlay = ensureLoadingOverlay();
     const textEl = document.getElementById('loadingText');
-    if (overlay) {
-        if (textEl) textEl.textContent = message;
-        overlay.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
+    if (textEl) textEl.textContent = message;
+    overlay.classList.remove('hidden');
+    document.body.classList.add('is-loading');
+    document.body.style.overflow = 'hidden';
 }
 
 function hideLoadingOverlay() {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) {
         overlay.classList.add('hidden');
-        document.body.style.overflow = '';
+    }
+    document.body.classList.remove('is-loading');
+    document.body.style.overflow = '';
+}
+
+/** 문의 제출 시작: 즉시 로딩+버튼 잠금. 이미 제출 중이면 false */
+function beginInquirySubmit(submitBtn, message) {
+    if (isInquirySubmitting) return false;
+    isInquirySubmitting = true;
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.setAttribute('aria-disabled', 'true');
+    }
+    showLoadingOverlay(message || '문의 접수 중입니다');
+    return true;
+}
+
+/** 실패 시에만 잠금 해제. 성공 시에는 재제출 불가 유지 */
+function endInquirySubmit(submitBtn, unlock, restoreLabel) {
+    hideLoadingOverlay();
+    if (!unlock) return;
+
+    isInquirySubmitting = false;
+    if (!submitBtn) return;
+
+    submitBtn.disabled = false;
+    submitBtn.setAttribute('aria-disabled', 'false');
+    if (typeof restoreLabel === 'function') {
+        restoreLabel(submitBtn);
+    }
+}
+
+function restoreConsultationSubmitBtn(submitBtn) {
+    const originalContent = submitBtn.getAttribute('data-original');
+    if (originalContent) {
+        submitBtn.innerHTML = originalContent;
+    } else if (submitBtn.classList.contains('h-3-btn')) {
+        submitBtn.textContent = '문의하기';
+    } else if (submitBtn.classList.contains('h-9-btn')) {
+        submitBtn.innerHTML = '<img src="images/h-9/h-9-btn.png" alt="문의하기">';
+    } else if (submitBtn.classList.contains('mini-submit-btn')) {
+        submitBtn.textContent = '상담신청';
+    } else {
+        submitBtn.textContent = '문의하기';
     }
 }
 
@@ -607,9 +672,18 @@ function initForms() {
     document.querySelectorAll('.consultation-form').forEach(form => {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            // 클릭 즉시 로딩/잠금 (검증 전에도 중복 클릭 차단)
+            if (!beginInquirySubmit(submitBtn, '문의 접수 중입니다')) {
+                return;
+            }
+
+            const unlock = () => endInquirySubmit(submitBtn, true, restoreConsultationSubmitBtn);
             
             const privacyCheckbox = form.querySelector('input[type="checkbox"][required]');
             if (!privacyCheckbox || !privacyCheckbox.checked) {
+                unlock();
                 showAlert('개인정보처리방침 동의는 필수입니다.');
                 return;
             }
@@ -621,6 +695,7 @@ function initForms() {
             const carInput = Array.from(inputs).find(input => input.placeholder === '차종');
             
             if (!nameInput || !phoneInput || !carInput) {
+                unlock();
                 showAlert('모든 필드를 입력해주세요.');
                 return;
             }
@@ -631,29 +706,34 @@ function initForms() {
             
             // 기본 검증
             if (!name || !phone || !carName) {
+                unlock();
                 showAlert('모든 필드를 입력해주세요.');
                 return;
             }
             
             if (isInvalidName(name)) {
+                unlock();
                 showAlert('성함은 2글자 이상 정확히 입력해주세요.\n(자음/모음만·연속숫자 불가)');
                 nameInput.focus();
                 return;
             }
 
             if (hasBannedWord(name)) {
+                unlock();
                 showAlert('성함에 부적절한 단어가 포함되어 있습니다.\n다시 입력해주세요.');
                 nameInput.focus();
                 return;
             }
 
             if (isInvalidCarNameText(carName)) {
+                unlock();
                 showAlert('차종을 정확히 입력해주세요.\n(자음/모음만·숫자만·연속숫자 불가)');
                 carInput.focus();
                 return;
             }
 
             if (hasBannedWord(carName)) {
+                unlock();
                 showAlert('차종에 부적절한 단어가 포함되어 있습니다.\n다시 입력해주세요.');
                 carInput.focus();
                 return;
@@ -661,52 +741,32 @@ function initForms() {
 
             const phoneNumber = phone.replace(/[^0-9]/g, '');
             if (!/^01[016789][0-9]{8}$/.test(phoneNumber)) {
+                unlock();
                 showAlert('연락처를 휴대폰 번호 11자리로 입력해주세요.\n(010, 011, 016~019)');
                 phoneInput.focus();
                 return;
             }
 
             if (isInvalidPhonePattern(phoneNumber)) {
+                unlock();
                 showAlert('연락처에 동일·연속 숫자만 있는 번호는 사용할 수 없습니다.');
                 phoneInput.focus();
                 return;
             }
             
-            // 버튼 비활성화
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
+            let success = false;
+            try {
+                success = await saveInquiry(name, phone, carName);
+            } catch (err) {
+                success = false;
             }
-            
-            // 로딩 오버레이 표시
-            showLoadingOverlay('문의 접수 중입니다');
-            
-            // 문의 저장
-            const success = await saveInquiry(name, phone, carName);
-            
-            // 로딩 오버레이 숨김
-            hideLoadingOverlay();
-            
+
             if (success) {
                 form.reset();
-                // 완료 모달 표시
+                endInquirySubmit(submitBtn, false);
                 showCompletionModal();
-            }
-            
-            // 버튼 활성화
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                // 이미지 버튼인 경우 원래 상태로 복원
-                const originalContent = submitBtn.getAttribute('data-original');
-                if (originalContent) {
-                    submitBtn.innerHTML = originalContent;
-                } else if (submitBtn.classList.contains('h-3-btn')) {
-                    submitBtn.textContent = '문의하기';
-                } else if (submitBtn.classList.contains('h-9-btn')) {
-                    submitBtn.innerHTML = '<img src="images/h-9/h-9-btn.png" alt="문의하기">';
-                } else {
-                    submitBtn.textContent = '문의하기';
-                }
+            } else {
+                unlock();
             }
         });
     });
@@ -766,9 +826,18 @@ function initMiniConsultation() {
     if (miniForm) {
         miniForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const submitBtn = miniForm.querySelector('button[type="submit"]');
+            // 클릭 즉시 로딩/잠금
+            if (!beginInquirySubmit(submitBtn, '문의 접수 중입니다')) {
+                return;
+            }
+
+            const unlock = () => endInquirySubmit(submitBtn, true, restoreConsultationSubmitBtn);
             
             const privacyCheckbox = miniForm.querySelector('input[type="checkbox"][required]');
             if (!privacyCheckbox || !privacyCheckbox.checked) {
+                unlock();
                 showAlert('개인정보처리방침 동의는 필수입니다.');
                 return;
             }
@@ -780,6 +849,7 @@ function initMiniConsultation() {
             const carInput = Array.from(inputs).find(input => input.placeholder === '차종');
             
             if (!nameInput || !phoneInput || !carInput) {
+                unlock();
                 showAlert('모든 필드를 입력해주세요.');
                 return;
             }
@@ -790,29 +860,34 @@ function initMiniConsultation() {
             
             // 기본 검증
             if (!name || !phone || !carName) {
+                unlock();
                 showAlert('모든 필드를 입력해주세요.');
                 return;
             }
             
             if (isInvalidName(name)) {
+                unlock();
                 showAlert('성함은 2글자 이상 정확히 입력해주세요.\n(자음/모음만·연속숫자 불가)');
                 nameInput.focus();
                 return;
             }
 
             if (hasBannedWord(name)) {
+                unlock();
                 showAlert('성함에 부적절한 단어가 포함되어 있습니다.\n다시 입력해주세요.');
                 nameInput.focus();
                 return;
             }
 
             if (isInvalidCarNameText(carName)) {
+                unlock();
                 showAlert('차종을 정확히 입력해주세요.\n(자음/모음만·숫자만·연속숫자 불가)');
                 carInput.focus();
                 return;
             }
 
             if (hasBannedWord(carName)) {
+                unlock();
                 showAlert('차종에 부적절한 단어가 포함되어 있습니다.\n다시 입력해주세요.');
                 carInput.focus();
                 return;
@@ -820,42 +895,32 @@ function initMiniConsultation() {
 
             const phoneNumber = phone.replace(/[^0-9]/g, '');
             if (!/^01[016789][0-9]{8}$/.test(phoneNumber)) {
+                unlock();
                 showAlert('연락처를 휴대폰 번호 11자리로 입력해주세요.\n(010, 011, 016~019)');
                 phoneInput.focus();
                 return;
             }
 
             if (isInvalidPhonePattern(phoneNumber)) {
+                unlock();
                 showAlert('연락처에 동일·연속 숫자만 있는 번호는 사용할 수 없습니다.');
                 phoneInput.focus();
                 return;
             }
             
-            // 버튼 비활성화
-            const submitBtn = miniForm.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
+            let success = false;
+            try {
+                success = await saveInquiry(name, phone, carName);
+            } catch (err) {
+                success = false;
             }
-            
-            // 로딩 오버레이 표시
-            showLoadingOverlay('문의 접수 중입니다');
-            
-            // 문의 저장
-            const success = await saveInquiry(name, phone, carName);
-            
-            // 로딩 오버레이 숨김
-            hideLoadingOverlay();
-            
+
             if (success) {
                 miniForm.reset();
-                // 완료 모달 표시
+                endInquirySubmit(submitBtn, false);
                 showCompletionModal();
-            }
-            
-            // 버튼 활성화
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '상담신청';
+            } else {
+                unlock();
             }
         });
     }

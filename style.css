@@ -37,6 +37,10 @@ body.is-loading {
     overflow: hidden;
 }
 
+body.is-loading .loading-overlay {
+    pointer-events: auto;
+}
+
 .background {
     position: fixed;
     top: 0;
