@@ -77,36 +77,3 @@ export async function listInquiriesNeedingCrmSync(db, { since = '', limit = 100 
 
   return result?.results || [];
 }
-
-/** 과거 대조용: 기간 안 ok가 아닌 접수 (1회 CRM 비교용) */
-export async function listInquiriesForCrmReconcile(db, { since = '', until = '', limit = 1000 } = {}) {
-  if (!db) return [];
-  await ensureInquiryCrmSyncColumns(db);
-  const cap = Math.min(2000, Math.max(1, Number(limit) || 1000));
-  const params = [];
-  let where = `crm_sync_status NOT IN ('ok', 'skipped')`;
-
-  if (since) {
-    where += ` AND created_at >= ?`;
-    params.push(String(since));
-  }
-  if (until) {
-    where += ` AND created_at < ?`;
-    params.push(String(until));
-  }
-
-  const result = await db
-    .prepare(
-      `SELECT id, wr_name as name, wr_subject as phone, wr_7 as affiliation,
-              wr_3 as vehicle_type, wr_4 as car_name, created_at,
-              crm_sync_status, crm_sync_detail
-       FROM inquiries
-       WHERE ${where}
-       ORDER BY created_at DESC
-       LIMIT ?`
-    )
-    .bind(...params, cap)
-    .all();
-
-  return result?.results || [];
-}

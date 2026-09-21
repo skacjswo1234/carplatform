@@ -68,43 +68,6 @@ async function loadCrmSyncFails() {
     }
 }
 
-async function reconcileCrmSync() {
-    const ok = await askConfirmModal({
-        title: '오늘까지 CRM 대조',
-        message: '오늘 이전 접수를 CRM 전화번호와 한 번 비교합니다. 이미 CRM에 있는 건은 상태로만 정리하며 CRM 데이터는 수정하지 않습니다.',
-        confirmText: '대조 실행',
-        cancelText: '취소',
-        danger: false,
-    });
-    if (!ok) return;
-
-    showAdminLoading('과거 건 CRM 대조 중…');
-    try {
-        const response = await fetch(`${API_BASE_URL}/crm-resync`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'reconcile',
-                since: '2026-09-01 00:00:00',
-                limit: 1000,
-            }),
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-            throw new Error(data.error || '대조 실패');
-        }
-        showMessageModal(
-            `대조 완료: 스캔 ${data.scanned || 0}건, 이미 CRM ${data.already_in_crm || 0}건 정리, 미존재 ${data.missing_count || 0}건`,
-            'success'
-        );
-        await loadCrmSyncFails();
-    } catch (error) {
-        showMessageModal(error.message || '대조 실패', 'error');
-    } finally {
-        hideAdminLoading();
-    }
-}
-
 async function pushCrmSync(ids) {
     showAdminLoading('CRM으로 올리는 중…');
     try {
@@ -232,10 +195,6 @@ function initEventListeners() {
     const crmSyncRefreshBtn = document.getElementById('crmSyncRefreshBtn');
     if (crmSyncRefreshBtn) {
         crmSyncRefreshBtn.addEventListener('click', loadCrmSyncFails);
-    }
-    const crmSyncReconcileBtn = document.getElementById('crmSyncReconcileBtn');
-    if (crmSyncReconcileBtn) {
-        crmSyncReconcileBtn.addEventListener('click', reconcileCrmSync);
     }
     const crmSyncAllBtn = document.getElementById('crmSyncAllBtn');
     if (crmSyncAllBtn) {

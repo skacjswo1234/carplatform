@@ -3,12 +3,10 @@ import {
   getCrmPhoneStatus,
   normalizePhoneDigits,
   syncInquiryToCrmWithRetry,
-  filterMissingFromCrm,
 } from '../lib/crm-reentry.js';
 import {
   ensureInquiryCrmSyncColumns,
   listInquiriesNeedingCrmSync,
-  listInquiriesForCrmReconcile,
   updateInquiryCrmSync,
   toKstDatetime,
 } from '../lib/crm-sync-status.js';
@@ -50,30 +48,6 @@ function toPayload(row) {
   };
 }
 
-async function markAlreadyBatch(db, alreadyRows) {
-  if (!alreadyRows.length) return;
-  const detail = JSON.stringify({
-    status: 'ok',
-    reason: 'already_in_crm',
-    method: 'reconcile',
-  });
-  const now = toKstDatetime();
-  for (let i = 0; i < alreadyRows.length; i += 40) {
-    const chunk = alreadyRows.slice(i, i + 40);
-    const placeholders = chunk.map(() => '?').join(',');
-    await db
-      .prepare(
-        `UPDATE inquiries
-         SET crm_sync_status = 'ok',
-             crm_sync_detail = ?,
-             crm_synced_at = ?
-         WHERE id IN (${placeholders})`
-      )
-      .bind(detail, now, ...chunk.map((r) => Number(r.id)))
-      .run();
-  }
-}
-
 export async function onRequestOptions() {
   return new Response(null, { headers: CORS });
 }
@@ -96,7 +70,7 @@ export async function onRequestGet(context) {
       mode: 'live_failures',
       count: rows.length,
       items: rows,
-      note: '오늘부터 동기화 실패·대기 건만 표시합니다. 과거 대조는 오늘까지 CRM 대조를 한 번 실행하세요.',
+      note: '오늘부터 동기화 실패·대기 건만 표시합니다.',
     });
   } catch (error) {
     console.error('crm-resync GET', error);
@@ -118,43 +92,8 @@ export async function onRequestPost(context) {
       body = {};
     }
 
-    const liveSince = todayStartKst();
-    const action = String(body.action || '').trim();
+    const since = String(body.since || todayStartKst()).trim();
     const limit = Number(body.limit || 100);
-
-    // 과거 1회 대조
-    if (action === 'reconcile') {
-      const crmDb = getCrmDb(env);
-      const reconcileSince = String(body.since || '2026-09-01 00:00:00').trim();
-      const until = String(body.until || liveSince).trim();
-      const scanLimit = Math.min(2000, Math.max(Number(limit) || 1000, 100));
-
-      const candidates = await listInquiriesForCrmReconcile(db, {
-        since: reconcileSince,
-        until,
-        limit: scanLimit,
-      });
-
-      const filtered = await filterMissingFromCrm(crmDb, candidates, (row) => row.phone);
-      const alreadyRows = filtered.alreadyRows || [];
-      const missing = filtered.missing || [];
-
-      await markAlreadyBatch(db, alreadyRows);
-
-      return json({
-        success: true,
-        action: 'reconcile',
-        since: reconcileSince,
-        until,
-        scanned: candidates.length,
-        already_in_crm: alreadyRows.length,
-        missing_count: missing.length,
-        items: missing.slice(0, Math.min(200, limit)),
-        note: '오늘 이전 건을 CRM 전화번호와 1회 비교했습니다. 이미 있는 건은 ok로 정리했습니다.',
-      });
-    }
-
-    const since = String(body.since || liveSince).trim();
     const requestIds = Array.isArray(body.ids)
       ? body.ids.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
       : [];
