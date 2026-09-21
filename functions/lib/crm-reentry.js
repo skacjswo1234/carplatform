@@ -108,51 +108,37 @@ async function insertCustomerDirect(crmDb, payload) {
   const route = formatLandingRoute(payload.source_site);
   const registeredAt = payload.registered_at || new Date().toISOString().slice(0, 19).replace('T', ' ');
   const belong = String(payload.belong || payload.affiliation || '').trim() || null;
-  let lastError = null;
 
-  for (let attempt = 1; attempt <= INSERT_MAX_ATTEMPTS; attempt += 1) {
-    const mIdx = await getNextCustomerId(crmDb);
-    const listNo = await getNextListNo(crmDb);
+  // m_idx는 MAX+1 수동채번 금지 — SQLite INTEGER PRIMARY KEY 자동발급으로 동시 insert 충돌 제거
+  const result = await crmDb
+    .prepare(`
+      INSERT INTO customers (
+        name, phone, route, belong, finance, vehicle_timing,
+        manager, manager_account_id, status, registered_at, list_no
+      ) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, '미등록', ?, NULL)
+    `)
+    .bind(
+      payload.name,
+      phone,
+      route,
+      belong,
+      payload.finance || null,
+      payload.vehicle_timing || payload.memo || null,
+      registeredAt,
+    )
+    .run();
 
-    try {
-      await crmDb
-        .prepare(`
-          INSERT INTO customers (
-            m_idx, list_no, name, phone, route, belong, finance, vehicle_timing,
-            manager, manager_account_id, status, registered_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, '미등록', ?)
-        `)
-        .bind(
-          mIdx,
-          listNo,
-          payload.name,
-          phone,
-          route,
-          belong,
-          payload.finance || null,
-          payload.vehicle_timing || payload.memo || null,
-          registeredAt,
-        )
-        .run();
-
-      return { ok: true, method: 'd1', m_idx: mIdx, attempts: attempt };
-    } catch (error) {
-      lastError = error;
-
-      const again = await findPhoneRow(crmDb, 'customers', phoneDigits);
-      if (again?.row_id) {
-        return { ok: true, method: 'd1', m_idx: again.row_id, already: true, attempts: attempt };
-      }
-
-      if (!isUniqueConflict(error) || attempt >= INSERT_MAX_ATTEMPTS) {
-        throw error;
-      }
-
-      await sleep(15 * attempt);
-    }
+  const mIdx = Number(result?.meta?.last_row_id || 0);
+  if (!mIdx) {
+    throw new Error('CRM customer insert failed: missing last_row_id');
   }
 
-  throw lastError || new Error('CRM customer insert failed');
+  // list_no는 가능하면 m_idx와 맞춤 (표시용, 충돌 없음)
+  try {
+    await crmDb.prepare('UPDATE customers SET list_no = ? WHERE m_idx = ? AND list_no IS NULL').bind(mIdx, mIdx).run();
+  } catch (_) {}
+
+  return { ok: true, method: 'd1', m_idx: mIdx };
 }
 
 async function moveCustomerToReentry(crmDb, phoneDigits, groupKey) {
