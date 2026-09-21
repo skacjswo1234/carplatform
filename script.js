@@ -687,14 +687,16 @@ async function saveInquiry() {
                     console.warn('Apps Script 전송 오류:', error);
                 }
             }
+            return true;
         }
+
+        showAlertModal(result.error || result.message || '문의 접수에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        return false;
     } catch (error) {
         console.error('Error saving inquiry:', error);
-        // 저장 실패해도 완료 페이지는 보여줌 (IP 제한과 무관한 에러)
+        showAlertModal('문의 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+        return false;
     }
-
-    // 여기까지 왔으면 IP 제한에는 안 걸린 것으로 간주
-    return true;
 }
 
 // 개인정보처리방침 모달
@@ -785,26 +787,33 @@ function showCompletionModal() {
         
         if (countdownSeconds <= 0) {
             clearInterval(redirectTimer);
-            redirectToMainSite();
+            closeCompletionStay();
         }
     }, 1000);
 }
 
 function updateCountdown(element) {
     if (element && countdownSeconds > 0) {
-        element.textContent = `${countdownSeconds}초 후 자동으로 이동합니다.`;
+        element.textContent = `${countdownSeconds}초 후 안내가 닫힙니다.`;
     } else if (element && countdownSeconds <= 0) {
-        element.textContent = '이동 중...';
+        element.textContent = '감사합니다.';
     }
 }
 
-// 2차 페이지로 리다이렉트 (carplatform-ver2/index.html)
-function redirectToMainSite() {
+// 추가 문의 폼(ver2)으로 보내지 않음 — 이중 문의·채널 혼동 방지
+function closeCompletionStay() {
     if (redirectTimer) {
         clearInterval(redirectTimer);
         redirectTimer = null;
     }
-    
-    // carplatform-ver2 폴더의 index.html로 이동
-    window.location.href = '/carplatform-ver2/index.html';
+
+    const modal = document.getElementById('completionModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// 하위 호환: 기존 버튼 핸들러가 redirectToMainSite를 호출해도 동일 동작
+function redirectToMainSite() {
+    closeCompletionStay();
 }
