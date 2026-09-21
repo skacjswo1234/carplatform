@@ -1,5 +1,6 @@
 import { isIpBlocked, ensureBlockedIpsTable } from '../lib/ip-block.js';
 import { getCrmDb, getCrmPhoneStatus, syncInquiryToCrmWithRetry } from '../lib/crm-reentry.js';
+import { ensureInquiryCrmSyncColumns, updateInquiryCrmSync } from '../lib/crm-sync-status.js';
 
 // SQL 인젝션 방지 함수
 function sanitizeInput(value) {
@@ -388,6 +389,7 @@ export async function onRequestPost(context) {
 
     const db = env['carplatform-db'];
     await ensureBlockedIpsTable(db);
+    await ensureInquiryCrmSyncColumns(db);
 
     if (ip && ip !== 'unknown' && (await isIpBlocked(db, ip))) {
       return new Response(JSON.stringify({
@@ -675,6 +677,12 @@ export async function onRequestPost(context) {
         console.error('CRM sync threw', syncErr);
       }
 
+      try {
+        await updateInquiryCrmSync(db, inquiryId, syncResult);
+      } catch (syncSaveErr) {
+        console.error('updateInquiryCrmSync', syncSaveErr);
+      }
+
       const syncFailed = !syncResult?.ok && !syncResult?.skipped;
       if (syncFailed) {
         console.error('CRM sync failed after retries', inquiryId, syncResult);
@@ -687,6 +695,9 @@ export async function onRequestPost(context) {
             try {
               await new Promise((r) => setTimeout(r, 2500));
               const retry = await syncInquiryToCrmWithRetry(env, crmPhoneStatus, crmPayload, 2);
+              try {
+                await updateInquiryCrmSync(db, inquiryId, retry);
+              } catch (_) {}
               if (!retry?.ok && !retry?.skipped) {
                 console.error('CRM sync still failed after deferred retry', inquiryId, retry);
               }

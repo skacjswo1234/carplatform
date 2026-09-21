@@ -1,3 +1,61 @@
+let crmSyncRows = [];
+
+async function loadCrmSyncFails() {
+    const tbody = document.getElementById('crmSyncTableBody');
+    const summary = document.getElementById('crmSyncSummary');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">불러오는 중...</td></tr>';
+    try {
+        const response = await fetch(`${API_BASE_URL}/crm-resync?since=2026-09-01%2000:00:00&limit=200`);
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || '불러오기 실패');
+        }
+        crmSyncRows = data.items || [];
+        if (summary) summary.textContent = `미동기화 ${crmSyncRows.length}건`;
+        if (!crmSyncRows.length) {
+            tbody.innerHTML = '<tr><td colspan="6">미동기화 건이 없습니다.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = crmSyncRows.map((row) => `
+            <tr>
+                <td>${escapeHtml(formatKoreanDateTime(row.created_at))}</td>
+                <td>${escapeHtml(row.name || '-')}</td>
+                <td>${escapeHtml(formatPhone(row.phone || '-'))}</td>
+                <td>${escapeHtml(row.car_name || '-')}</td>
+                <td>${escapeHtml(row.crm_sync_status || 'pending')}</td>
+                <td><button class="action-btn crm-push-one" data-id="${row.id}" type="button">CRM으로 올리기</button></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="6">불러오기 실패</td></tr>';
+        console.error(error);
+        alert(error.message || '불러오기 실패');
+    }
+}
+
+async function pushCrmSync(ids) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/crm-resync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                since: '2026-09-01 00:00:00',
+                limit: 200,
+                ids: ids || [],
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || '동기화 실패');
+        }
+        alert(`처리 완료: 성공/스킵 ${data.synced || 0}건, 실패 ${data.failed || 0}건`);
+        loadCrmSyncFails();
+    } catch (error) {
+        alert(error.message || '동기화 실패');
+    }
+}
+
 // API 기본 URL (실제 배포 후 변경 필요)
 const API_BASE_URL = '/api';
 
@@ -84,6 +142,7 @@ function initEventListeners() {
         const activeNav = document.querySelector('.nav-item.active');
         const page = activeNav && activeNav.dataset.page ? activeNav.dataset.page : 'inquiries';
         if (page === 'ipblock') loadIpBlockData();
+        else if (page === 'crmsync') loadCrmSyncFails();
         else if (page === 'reviews') loadReviews();
         else loadInquiries();
     });
@@ -95,6 +154,30 @@ function initEventListeners() {
 
     document.getElementById('filterStatus').addEventListener('change', function() {
         filterInquiries();
+    });
+
+    const crmSyncRefreshBtn = document.getElementById('crmSyncRefreshBtn');
+    if (crmSyncRefreshBtn) {
+        crmSyncRefreshBtn.addEventListener('click', loadCrmSyncFails);
+    }
+    const crmSyncAllBtn = document.getElementById('crmSyncAllBtn');
+    if (crmSyncAllBtn) {
+        crmSyncAllBtn.addEventListener('click', function () {
+            if (!crmSyncRows.length) {
+                alert('올릴 건이 없습니다.');
+                return;
+            }
+            if (!confirm(`미동기화 ${crmSyncRows.length}건을 CRM으로 올릴까요?`)) return;
+            pushCrmSync([]);
+        });
+    }
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.crm-push-one');
+        if (!btn) return;
+        const id = Number(btn.getAttribute('data-id'));
+        if (!id) return;
+        if (!confirm('이 건을 CRM으로 올릴까요?')) return;
+        pushCrmSync([id]);
     });
 
     initIpBlockListDelegation();
@@ -239,6 +322,7 @@ function switchPage(page) {
     // 페이지 제목 업데이트
     const titles = {
         'inquiries': '문의 리스트',
+        'crmsync': 'CRM 미동기화',
         'ipblock': 'IP 차단 관리',
         'reviews': '고객후기 관리',
         'password': '비밀번호 변경'
@@ -250,6 +334,8 @@ function switchPage(page) {
         loadReviews();
     } else if (page === 'ipblock') {
         loadIpBlockData();
+    } else if (page === 'crmsync') {
+        loadCrmSyncFails();
     }
 }
 
