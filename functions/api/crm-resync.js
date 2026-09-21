@@ -122,19 +122,7 @@ export async function onRequestPost(context) {
         status = await getCrmPhoneStatus(crmDb, payload.phone);
       }
 
-      if (status.status === 'reentry' && status.reason === 'customers') {
-        const already = { ok: true, already: true, reason: 'already_in_crm', method: 'skip' };
-        await updateInquiryCrmSync(db, row.id, already);
-        results.push({
-          id: row.id,
-          name: row.name,
-          phone: row.phone,
-          ok: true,
-          reason: 'already_in_crm',
-        });
-        continue;
-      }
-
+      // 이미 customers에 있어도 재유입 ingest로 넘겨 재문의 세트를 만든다 (스킵 금지).
       const syncResult = await syncInquiryToCrmWithRetry(env, status, payload, 3);
       await updateInquiryCrmSync(db, row.id, syncResult);
       results.push({

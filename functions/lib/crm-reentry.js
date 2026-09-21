@@ -120,6 +120,32 @@ async function findPhoneRow(db, table, phoneDigits) {
     .first();
 }
 
+/** 배정 직후 지연 재전송으로 고객이 다시 재진입으로 빠지는 것을 막는다 */
+async function findRecentCustomerForDedup(crmDb, phoneDigits, registeredAt) {
+  if (!crmDb || !phoneDigits) return null;
+
+  const registeredAtValue = String(registeredAt || '').trim();
+  const phoneExpr = normalizedPhoneSql('phone');
+
+  return crmDb
+    .prepare(`
+      SELECT m_idx AS id, registered_at
+      FROM customers
+      WHERE ${phoneExpr} = ?
+        AND COALESCE(DEL_YN, 'N') != 'Y'
+        AND (
+          (? != '' AND registered_at = ?)
+          OR datetime(COALESCE(NULLIF(registered_at, ''), imported_at)) >= datetime('now', '-10 minutes')
+          OR datetime(imported_at) >= datetime('now', '-10 minutes')
+          OR datetime(reassigned_at) >= datetime('now', '-10 minutes')
+        )
+      ORDER BY datetime(COALESCE(NULLIF(reassigned_at, registered_at), registered_at, imported_at)) DESC
+      LIMIT 1
+    `)
+    .bind(phoneDigits, registeredAtValue, registeredAtValue)
+    .first();
+}
+
 export async function getCrmPhoneStatus(crmDb, phoneDigits) {
   if (!crmDb || !phoneDigits) {
     return { status: 'new' };
@@ -302,6 +328,21 @@ async function insertReentryDirect(crmDb, payload) {
   const groupKey = phoneDigits;
   let inquiryId;
   let action = 'created';
+
+  // 배정 직후·동일시각 재전송이면 inquiry 생성/이동 자체를 하지 않는다
+  if (phoneDigits) {
+    const recentCustomer = await findRecentCustomerForDedup(crmDb, phoneDigits, registeredAt);
+    if (recentCustomer) {
+      return {
+        ok: true,
+        method: 'd1',
+        action: 'ignored_duplicate',
+        already: true,
+        m_idx: recentCustomer.id,
+        moved_existing: false,
+      };
+    }
+  }
 
   if (payload.external_id && payload.source_site) {
     const existing = await crmDb
