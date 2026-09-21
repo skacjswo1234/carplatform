@@ -48,7 +48,7 @@ async function loadCrmSyncFails() {
     tbody.innerHTML = '<tr><td colspan="6" class="loading">불러오는 중...</td></tr>';
     showAdminLoading('실패 목록을 불러오는 중…');
     try {
-        // since 미지정 → 서버가 최근 7일 실패/pending 반환
+        // since 미지정 → 서버가 오늘 00:00부터 실패/pending 반환
         const response = await fetch(`${API_BASE_URL}/crm-resync?limit=100`, {
             headers: getAdminAuthHeaders(),
         });
@@ -64,10 +64,10 @@ async function loadCrmSyncFails() {
         }
         crmSyncRows = data.items || [];
         if (summary) {
-            summary.textContent = `최근 7일 동기화 실패/대기 ${crmSyncRows.length}건`;
+            summary.textContent = `오늘부터 동기화 실패/대기 ${crmSyncRows.length}건`;
         }
         if (!crmSyncRows.length) {
-            tbody.innerHTML = '<tr><td colspan="6">최근 7일 실패 건이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">오늘 이후 실패 건이 없습니다.</td></tr>';
             return;
         }
         tbody.innerHTML = crmSyncRows.map((row) => `

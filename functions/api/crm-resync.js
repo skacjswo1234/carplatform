@@ -28,9 +28,8 @@ function json(data, status = 200) {
   });
 }
 
-function daysAgoStartKst(days = 7) {
-  const ms = Date.now() + 9 * 60 * 60 * 1000 - Number(days) * 24 * 60 * 60 * 1000;
-  const d = new Date(ms);
+function todayStartKst() {
+  const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return `${d.toISOString().slice(0, 10)} 00:00:00`;
 }
 
@@ -87,7 +86,7 @@ export async function onRequestGet(context) {
     await ensureInquiryCrmSyncColumns(db);
 
     const url = new URL(request.url);
-    const since = (url.searchParams.get('since') || daysAgoStartKst(7)).trim();
+    const since = (url.searchParams.get('since') || todayStartKst()).trim();
     const limit = Number(url.searchParams.get('limit') || 100);
     const rows = await listInquiriesNeedingCrmSync(db, { since, limit });
 
@@ -97,7 +96,7 @@ export async function onRequestGet(context) {
       mode: 'live_failures',
       count: rows.length,
       items: rows,
-      note: '최근 7일 동기화 실패·대기 건을 표시합니다. since 파라미터로 기간을 바꿀 수 있습니다.',
+      note: '오늘부터 동기화 실패·대기 건만 표시합니다.',
     });
   } catch (error) {
     console.error('crm-resync GET', error);
@@ -123,7 +122,7 @@ export async function onRequestPost(context) {
       return json({ success: false, error: '관리자 인증이 필요합니다. 다시 로그인해 주세요.' }, 401);
     }
 
-    const since = String(body.since || daysAgoStartKst(7)).trim();
+    const since = String(body.since || todayStartKst()).trim();
     const limit = Number(body.limit || 100);
     const requestIds = Array.isArray(body.ids)
       ? body.ids.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
