@@ -28,25 +28,46 @@ function askConfirmModal(options) {
     });
 }
 
+function getAdminAuthHeaders(extra = {}) {
+    const password = sessionStorage.getItem('admin_password') || '';
+    return {
+        ...extra,
+        ...(password ? { 'X-Admin-Password': password } : {}),
+    };
+}
+
 async function loadCrmSyncFails() {
     const tbody = document.getElementById('crmSyncTableBody');
     const summary = document.getElementById('crmSyncSummary');
     if (!tbody) return;
+    if (!sessionStorage.getItem('admin_password')) {
+        showMessageModal('재동기화 권한이 없습니다. 다시 로그인해 주세요.', 'error');
+        window.location.href = 'login.html';
+        return;
+    }
     tbody.innerHTML = '<tr><td colspan="6" class="loading">불러오는 중...</td></tr>';
     showAdminLoading('실패 목록을 불러오는 중…');
     try {
-        // since 미지정 → 서버가 오늘 00:00부터 실패/pending만 반환
-        const response = await fetch(`${API_BASE_URL}/crm-resync?limit=100`);
+        // since 미지정 → 서버가 최근 7일 실패/pending 반환
+        const response = await fetch(`${API_BASE_URL}/crm-resync?limit=100`, {
+            headers: getAdminAuthHeaders(),
+        });
         const data = await response.json();
+        if (response.status === 401) {
+            sessionStorage.removeItem('admin_password');
+            localStorage.removeItem('admin_logged_in');
+            window.location.href = 'login.html';
+            return;
+        }
         if (!response.ok || !data.success) {
             throw new Error(data.error || '불러오기 실패');
         }
         crmSyncRows = data.items || [];
         if (summary) {
-            summary.textContent = `오늘부터 동기화 실패/대기 ${crmSyncRows.length}건`;
+            summary.textContent = `최근 7일 동기화 실패/대기 ${crmSyncRows.length}건`;
         }
         if (!crmSyncRows.length) {
-            tbody.innerHTML = '<tr><td colspan="6">오늘 이후 실패 건이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">최근 7일 실패 건이 없습니다.</td></tr>';
             return;
         }
         tbody.innerHTML = crmSyncRows.map((row) => `
@@ -69,17 +90,28 @@ async function loadCrmSyncFails() {
 }
 
 async function pushCrmSync(ids) {
+    if (!sessionStorage.getItem('admin_password')) {
+        showMessageModal('재동기화 권한이 없습니다. 다시 로그인해 주세요.', 'error');
+        window.location.href = 'login.html';
+        return;
+    }
     showAdminLoading('CRM으로 올리는 중…');
     try {
         const response = await fetch(`${API_BASE_URL}/crm-resync`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
                 limit: 100,
                 ids: ids || [],
             }),
         });
         const data = await response.json();
+        if (response.status === 401) {
+            sessionStorage.removeItem('admin_password');
+            localStorage.removeItem('admin_logged_in');
+            window.location.href = 'login.html';
+            return;
+        }
         if (!response.ok || !data.success) {
             throw new Error(data.error || '동기화 실패');
         }
@@ -135,6 +167,7 @@ function checkLoginStatus() {
 // 로그아웃 함수 (필요시 사용)
 function logout() {
     localStorage.removeItem('admin_logged_in');
+    sessionStorage.removeItem('admin_password');
     window.location.href = 'login.html';
 }
 

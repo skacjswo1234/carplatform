@@ -14,7 +14,7 @@ import {
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password, X-Admin-Key',
 };
 
 function json(data, status = 200) {
@@ -28,9 +28,32 @@ function json(data, status = 200) {
   });
 }
 
-function todayStartKst() {
-  const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+function daysAgoStartKst(days = 7) {
+  const ms = Date.now() + 9 * 60 * 60 * 1000 - Number(days) * 24 * 60 * 60 * 1000;
+  const d = new Date(ms);
   return `${d.toISOString().slice(0, 10)} 00:00:00`;
+}
+
+async function requireAdminPassword(env, request, body = {}) {
+  const provided = String(
+    request.headers.get('x-admin-password')
+    || request.headers.get('x-admin-key')
+    || body.password
+    || body.admin_password
+    || '',
+  ).trim();
+
+  if (!provided) return false;
+
+  const db = env['carplatform-db'];
+  if (!db) return false;
+
+  try {
+    const row = await db.prepare('SELECT password FROM admin_password LIMIT 1').first();
+    return Boolean(row?.password && row.password === provided);
+  } catch {
+    return false;
+  }
 }
 
 function toPayload(row) {
@@ -55,12 +78,16 @@ export async function onRequestOptions() {
 export async function onRequestGet(context) {
   const { env, request } = context;
   try {
+    if (!(await requireAdminPassword(env, request))) {
+      return json({ success: false, error: '관리자 인증이 필요합니다. 다시 로그인해 주세요.' }, 401);
+    }
+
     const db = env['carplatform-db'];
     if (!db) return json({ success: false, error: 'DB 없음' }, 500);
     await ensureInquiryCrmSyncColumns(db);
 
     const url = new URL(request.url);
-    const since = (url.searchParams.get('since') || todayStartKst()).trim();
+    const since = (url.searchParams.get('since') || daysAgoStartKst(7)).trim();
     const limit = Number(url.searchParams.get('limit') || 100);
     const rows = await listInquiriesNeedingCrmSync(db, { since, limit });
 
@@ -70,7 +97,7 @@ export async function onRequestGet(context) {
       mode: 'live_failures',
       count: rows.length,
       items: rows,
-      note: '오늘부터 동기화 실패·대기 건만 표시합니다.',
+      note: '최근 7일 동기화 실패·대기 건을 표시합니다. since 파라미터로 기간을 바꿀 수 있습니다.',
     });
   } catch (error) {
     console.error('crm-resync GET', error);
@@ -92,7 +119,11 @@ export async function onRequestPost(context) {
       body = {};
     }
 
-    const since = String(body.since || todayStartKst()).trim();
+    if (!(await requireAdminPassword(env, request, body))) {
+      return json({ success: false, error: '관리자 인증이 필요합니다. 다시 로그인해 주세요.' }, 401);
+    }
+
+    const since = String(body.since || daysAgoStartKst(7)).trim();
     const limit = Number(body.limit || 100);
     const requestIds = Array.isArray(body.ids)
       ? body.ids.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
