@@ -42,28 +42,24 @@ export async function findExistingCrmPhoneDigits(crmDb, phoneDigitsList) {
   const unique = [...new Set((phoneDigitsList || []).map((v) => normalizePhoneDigits(v)).filter(Boolean))];
   if (!unique.length) return found;
 
-  const norm = normalizedPhoneSql('phone');
-  const chunkSize = 40;
+  // REPLACE 컬럼 스캔을 청크마다 반복하면 GET이 타임아웃됨 → 전화번호만 1회 로드 후 메모리 비교
+  const [customers, reentry] = await Promise.all([
+    crmDb.prepare(`SELECT phone FROM customers WHERE phone IS NOT NULL AND TRIM(phone) != ''`).all(),
+    crmDb.prepare(`SELECT phone FROM reentry_customers WHERE phone IS NOT NULL AND TRIM(phone) != ''`).all(),
+  ]);
 
-  for (let i = 0; i < unique.length; i += chunkSize) {
-    const chunk = unique.slice(i, i + chunkSize);
-    const placeholders = chunk.map(() => '?').join(',');
+  const crmSet = new Set();
+  for (const row of customers?.results || []) {
+    const digits = normalizePhoneDigits(row?.phone);
+    if (digits) crmSet.add(digits);
+  }
+  for (const row of reentry?.results || []) {
+    const digits = normalizePhoneDigits(row?.phone);
+    if (digits) crmSet.add(digits);
+  }
 
-    const customers = await crmDb
-      .prepare(`SELECT ${norm} AS digits FROM customers WHERE ${norm} IN (${placeholders})`)
-      .bind(...chunk)
-      .all();
-    const reentry = await crmDb
-      .prepare(`SELECT ${norm} AS digits FROM reentry_customers WHERE ${norm} IN (${placeholders})`)
-      .bind(...chunk)
-      .all();
-
-    for (const row of customers?.results || []) {
-      if (row?.digits) found.add(String(row.digits));
-    }
-    for (const row of reentry?.results || []) {
-      if (row?.digits) found.add(String(row.digits));
-    }
+  for (const digits of unique) {
+    if (crmSet.has(digits)) found.add(digits);
   }
 
   return found;
@@ -71,32 +67,29 @@ export async function findExistingCrmPhoneDigits(crmDb, phoneDigitsList) {
 
 /**
  * 후보 문의 중 CRM에 없는 것만 반환.
- * CRM에 이미 있으면 markAlreadyInCrm(row)로 상태 ok 처리.
+ * 상태 UPDATE는 하지 않음(목록 조회 타임아웃 방지). alreadyRows는 보정용.
  */
-export async function filterMissingFromCrm(crmDb, rows, getPhone, markAlreadyInCrm) {
-  if (!Array.isArray(rows) || !rows.length) return [];
+export async function filterMissingFromCrm(crmDb, rows, getPhone) {
+  if (!Array.isArray(rows) || !rows.length) {
+    return { missing: [], alreadyRows: [] };
+  }
 
   const phones = rows.map((row) => normalizePhoneDigits(getPhone(row)));
   const existing = await findExistingCrmPhoneDigits(crmDb, phones);
   const missing = [];
+  const alreadyRows = [];
 
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i];
     const digits = phones[i];
     if (digits && existing.has(digits)) {
-      if (typeof markAlreadyInCrm === 'function') {
-        try {
-          await markAlreadyInCrm(row);
-        } catch (error) {
-          console.error('markAlreadyInCrm failed', error);
-        }
-      }
+      alreadyRows.push(row);
       continue;
     }
     missing.push(row);
   }
 
-  return missing;
+  return { missing, alreadyRows };
 }
 
 function formatLandingRoute(sourceSite) {

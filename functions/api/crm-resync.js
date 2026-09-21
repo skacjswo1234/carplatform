@@ -44,9 +44,9 @@ function toPayload(row) {
   };
 }
 
-async function loadMissingRows(env, db, { since, limit, ids = [] }) {
+async function loadMissingRows(env, db, { since, limit, ids = [] }, waitUntil) {
   const crmDb = getCrmDb(env);
-  const scanLimit = Math.min(1000, Math.max(Number(limit) || 100, 200));
+  const scanLimit = Math.min(500, Math.max(Number(limit) || 100, 100));
   let rows = await listInquiriesNeedingCrmSync(db, { since, limit: scanLimit });
 
   if (ids.length) {
@@ -54,28 +54,55 @@ async function loadMissingRows(env, db, { since, limit, ids = [] }) {
     rows = rows.filter((row) => allow.has(Number(row.id)));
   }
 
-  rows = await filterMissingFromCrm(
-    crmDb,
-    rows,
-    (row) => row.phone,
-    async (row) => {
-      await updateInquiryCrmSync(db, row.id, {
-        ok: true,
-        already: true,
-        reason: 'already_in_crm',
-        method: 'reconcile',
-      });
-    }
-  );
+  const filtered = await filterMissingFromCrm(crmDb, rows, (row) => row.phone);
+  const alreadyRows = filtered.alreadyRows || [];
+  rows = (filtered.missing || []).slice(0, Math.max(1, Number(limit) || 100));
+
+  if (alreadyRows.length && typeof waitUntil === 'function') {
+    waitUntil(
+      (async () => {
+        const detail = JSON.stringify({
+          status: 'ok',
+          reason: 'already_in_crm',
+          method: 'reconcile',
+        });
+        const now = toKstDatetime();
+        for (let i = 0; i < alreadyRows.length; i += 40) {
+          const chunk = alreadyRows.slice(i, i + 40);
+          const placeholders = chunk.map(() => '?').join(',');
+          try {
+            await db
+              .prepare(
+                `UPDATE inquiries
+                 SET crm_sync_status = 'ok',
+                     crm_sync_detail = ?,
+                     crm_synced_at = ?
+                 WHERE id IN (${placeholders})`
+              )
+              .bind(detail, now, ...chunk.map((r) => Number(r.id)))
+              .run();
+          } catch (error) {
+            console.error('reconcile batch failed', error);
+          }
+        }
+      })()
+    );
+  }
 
   return {
     crmDb,
-    rows: rows.slice(0, Math.max(1, Number(limit) || 100)),
+    rows,
+    reconciled: alreadyRows.length,
   };
 }
 
 export async function onRequestOptions() {
   return new Response(null, { headers: CORS });
+}
+
+function defaultSinceKst(days = 7) {
+  const d = new Date(Date.now() + 9 * 60 * 60 * 1000 - days * 24 * 60 * 60 * 1000);
+  return `${d.toISOString().slice(0, 10)} 00:00:00`;
 }
 
 export async function onRequestGet(context) {
@@ -86,15 +113,21 @@ export async function onRequestGet(context) {
     await ensureInquiryCrmSyncColumns(db);
 
     const url = new URL(request.url);
-    const since = (url.searchParams.get('since') || '2026-09-01 00:00:00').trim();
-    const limit = Number(url.searchParams.get('limit') || 200);
-    const { rows } = await loadMissingRows(env, db, { since, limit });
+    const since = (url.searchParams.get('since') || defaultSinceKst(7)).trim();
+    const limit = Number(url.searchParams.get('limit') || 100);
+    const { rows, reconciled } = await loadMissingRows(
+      env,
+      db,
+      { since, limit },
+      context.waitUntil?.bind(context)
+    );
 
     return json({
       success: true,
       since,
       count: rows.length,
       items: rows,
+      reconciled: reconciled || 0,
       note: 'CRM customers/reentry에 없는 전화번호만 표시합니다.',
     });
   } catch (error) {
@@ -117,17 +150,22 @@ export async function onRequestPost(context) {
       body = {};
     }
 
-    const since = String(body.since || '2026-09-01 00:00:00').trim();
-    const limit = Number(body.limit || 200);
+    const since = String(body.since || defaultSinceKst(7)).trim();
+    const limit = Number(body.limit || 100);
     const requestIds = Array.isArray(body.ids)
       ? body.ids.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
       : [];
 
-    const { crmDb, rows } = await loadMissingRows(env, db, {
-      since,
-      limit,
-      ids: requestIds,
-    });
+    const { crmDb, rows } = await loadMissingRows(
+      env,
+      db,
+      {
+        since,
+        limit,
+        ids: requestIds,
+      },
+      context.waitUntil?.bind(context)
+    );
 
     const results = [];
 

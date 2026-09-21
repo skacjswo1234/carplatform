@@ -35,7 +35,11 @@ async function loadCrmSyncFails() {
     tbody.innerHTML = '<tr><td colspan="6" class="loading">불러오는 중...</td></tr>';
     showAdminLoading('미동기화 목록을 불러오는 중…');
     try {
-        const response = await fetch(`${API_BASE_URL}/crm-resync?since=2026-09-01%2000:00:00&limit=200`);
+        const sinceDate = new Date(Date.now() + 9 * 60 * 60 * 1000 - 7 * 24 * 60 * 60 * 1000);
+        const since = `${sinceDate.toISOString().slice(0, 10)} 00:00:00`;
+        const response = await fetch(
+            `${API_BASE_URL}/crm-resync?since=${encodeURIComponent(since)}&limit=100`
+        );
         const data = await response.json();
         if (!response.ok || !data.success) {
             throw new Error(data.error || '불러오기 실패');
@@ -72,8 +76,7 @@ async function pushCrmSync(ids) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                since: '2026-09-01 00:00:00',
-                limit: 200,
+                limit: 100,
                 ids: ids || [],
             }),
         });
