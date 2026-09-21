@@ -84,9 +84,9 @@
         <!-- CRM 미동기화 -->
         <div class="page-content" id="crmsyncPage">
             <p class="ipblock-lead">랜딩에는 접수됐지만 CRM으로 못 넘어간 건입니다. 버튼으로 CRM에 올릴 수 있습니다.</p>
-            <div style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
-                <button class="refresh-btn" id="crmSyncRefreshBtn" type="button">새로고침</button>
-                <button class="refresh-btn" id="crmSyncAllBtn" type="button">전체 CRM으로 올리기</button>
+            <div class="crm-sync-toolbar">
+                <button class="btn-primary" id="crmSyncRefreshBtn" type="button">새로고침</button>
+                <button class="btn-primary" id="crmSyncAllBtn" type="button">전체 CRM으로 올리기</button>
             </div>
             <p id="crmSyncSummary" class="ipblock-lead">불러오는 중…</p>
             <div class="table-container">
@@ -314,6 +314,15 @@
                 <button class="btn-secondary" id="cancelBtn">취소</button>
                 <button class="btn-primary" id="saveBtn">저장</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 전역 로딩 오버레이 -->
+    <div class="admin-loading" id="adminLoading" hidden>
+        <div class="admin-loading__panel">
+            <div class="admin-loading__spinner"></div>
+            <p class="admin-loading__text" id="adminLoadingText">처리 중…</p>
+            <div class="admin-loading__bar"><span></span></div>
         </div>
     </div>
 

@@ -1,10 +1,39 @@
 let crmSyncRows = [];
 
+function showAdminLoading(message) {
+    const el = document.getElementById('adminLoading');
+    const text = document.getElementById('adminLoadingText');
+    if (text) text.textContent = message || '처리 중…';
+    if (el) el.hidden = false;
+}
+
+function hideAdminLoading() {
+    const el = document.getElementById('adminLoading');
+    if (el) el.hidden = true;
+}
+
+function askConfirmModal(options) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const finish = (value) => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+        showConfirmModal({
+            ...(options || {}),
+            onConfirm: () => finish(true),
+            onCancel: () => finish(false),
+        });
+    });
+}
+
 async function loadCrmSyncFails() {
     const tbody = document.getElementById('crmSyncTableBody');
     const summary = document.getElementById('crmSyncSummary');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="6" class="loading">불러오는 중...</td></tr>';
+    showAdminLoading('미동기화 목록을 불러오는 중…');
     try {
         const response = await fetch(`${API_BASE_URL}/crm-resync?since=2026-09-01%2000:00:00&limit=200`);
         const data = await response.json();
@@ -24,17 +53,20 @@ async function loadCrmSyncFails() {
                 <td>${escapeHtml(formatPhone(row.phone || '-'))}</td>
                 <td>${escapeHtml(row.car_name || '-')}</td>
                 <td>${escapeHtml(row.crm_sync_status || 'pending')}</td>
-                <td><button class="action-btn crm-push-one" data-id="${row.id}" type="button">CRM으로 올리기</button></td>
+                <td><button class="btn-action btn-crm-push crm-push-one" data-id="${row.id}" type="button">CRM으로 올리기</button></td>
             </tr>
         `).join('');
     } catch (error) {
         tbody.innerHTML = '<tr><td colspan="6">불러오기 실패</td></tr>';
         console.error(error);
-        alert(error.message || '불러오기 실패');
+        showMessageModal(error.message || '불러오기 실패', 'error');
+    } finally {
+        hideAdminLoading();
     }
 }
 
 async function pushCrmSync(ids) {
+    showAdminLoading('CRM으로 올리는 중…');
     try {
         const response = await fetch(`${API_BASE_URL}/crm-resync`, {
             method: 'POST',
@@ -49,10 +81,12 @@ async function pushCrmSync(ids) {
         if (!response.ok || !data.success) {
             throw new Error(data.error || '동기화 실패');
         }
-        alert(`처리 완료: 성공/스킵 ${data.synced || 0}건, 실패 ${data.failed || 0}건`);
-        loadCrmSyncFails();
+        showMessageModal(`처리 완료: 성공/스킵 ${data.synced || 0}건, 실패 ${data.failed || 0}건`, 'success');
+        await loadCrmSyncFails();
     } catch (error) {
-        alert(error.message || '동기화 실패');
+        showMessageModal(error.message || '동기화 실패', 'error');
+    } finally {
+        hideAdminLoading();
     }
 }
 
@@ -162,21 +196,35 @@ function initEventListeners() {
     }
     const crmSyncAllBtn = document.getElementById('crmSyncAllBtn');
     if (crmSyncAllBtn) {
-        crmSyncAllBtn.addEventListener('click', function () {
+        crmSyncAllBtn.addEventListener('click', async function () {
             if (!crmSyncRows.length) {
-                alert('올릴 건이 없습니다.');
+                showMessageModal('올릴 건이 없습니다.', 'info');
                 return;
             }
-            if (!confirm(`미동기화 ${crmSyncRows.length}건을 CRM으로 올릴까요?`)) return;
+            const ok = await askConfirmModal({
+                title: 'CRM 업로드',
+                message: `미동기화 ${crmSyncRows.length}건을 CRM으로 올릴까요?`,
+                confirmText: '올리기',
+                cancelText: '취소',
+                danger: false,
+            });
+            if (!ok) return;
             pushCrmSync([]);
         });
     }
-    document.addEventListener('click', function (e) {
+    document.addEventListener('click', async function (e) {
         const btn = e.target.closest('.crm-push-one');
         if (!btn) return;
         const id = Number(btn.getAttribute('data-id'));
         if (!id) return;
-        if (!confirm('이 건을 CRM으로 올릴까요?')) return;
+        const ok = await askConfirmModal({
+            title: 'CRM 업로드',
+            message: '이 건을 CRM으로 올릴까요?',
+            confirmText: '올리기',
+            cancelText: '취소',
+            danger: false,
+        });
+        if (!ok) return;
         pushCrmSync([id]);
     });
 
@@ -213,6 +261,8 @@ function initEventListeners() {
     const confirmModalConfirm = document.getElementById('confirmModalConfirm');
     if (confirmModalCancel) {
         confirmModalCancel.addEventListener('click', function() {
+            if (typeof _confirmModalOnCancel === 'function') _confirmModalOnCancel();
+            _confirmModalOnCancel = null;
             confirmModal.classList.remove('active');
         });
     }
@@ -220,12 +270,17 @@ function initEventListeners() {
         confirmModalConfirm.addEventListener('click', function() {
             if (typeof _confirmModalOnConfirm === 'function') _confirmModalOnConfirm();
             _confirmModalOnConfirm = null;
+            _confirmModalOnCancel = null;
             confirmModal.classList.remove('active');
         });
     }
     if (confirmModal) {
         confirmModal.addEventListener('click', function(e) {
-            if (e.target === confirmModal) confirmModal.classList.remove('active');
+            if (e.target === confirmModal) {
+                if (typeof _confirmModalOnCancel === 'function') _confirmModalOnCancel();
+                _confirmModalOnCancel = null;
+                confirmModal.classList.remove('active');
+            }
         });
     }
 
@@ -1122,10 +1177,11 @@ function showMessageModal(message, type) {
 
 // 확인 모달용 콜백 (한 번만 등록한 버튼에서 사용)
 let _confirmModalOnConfirm = null;
+let _confirmModalOnCancel = null;
 
 // 확인 모달 (확인 시 onConfirm 호출)
 function showConfirmModal(options) {
-    const { title = '확인', message, confirmText = '확인', cancelText = '취소', onConfirm, danger = true } = options || {};
+    const { title = '확인', message, confirmText = '확인', cancelText = '취소', onConfirm, onCancel, danger = true } = options || {};
     const modal = document.getElementById('confirmModal');
     const titleEl = document.getElementById('confirmModalTitle');
     const textEl = document.getElementById('confirmModalText');
@@ -1139,6 +1195,7 @@ function showConfirmModal(options) {
     confirmBtn.textContent = confirmText;
     confirmBtn.classList.toggle('btn-danger', danger);
     _confirmModalOnConfirm = typeof onConfirm === 'function' ? onConfirm : null;
+    _confirmModalOnCancel = typeof onCancel === 'function' ? onCancel : null;
     modal.classList.add('active');
 }
 
