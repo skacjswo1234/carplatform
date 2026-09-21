@@ -1,5 +1,5 @@
 import { isIpBlocked, ensureBlockedIpsTable } from '../lib/ip-block.js';
-import { getCrmDb, getCrmPhoneStatus, syncInquiryToCrm } from '../lib/crm-reentry.js';
+import { getCrmDb, getCrmPhoneStatus, syncInquiryToCrmWithRetry } from '../lib/crm-reentry.js';
 
 // SQL 인젝션 방지 함수
 function sanitizeInput(value) {
@@ -660,16 +660,52 @@ export async function onRequestPost(context) {
         name: sanitizedName,
         phone: phoneNumber,
         finance: sanitizedVehicleType || '',
+        belong: sanitizedAffiliation || '',
+        affiliation: sanitizedAffiliation || '',
         memo: sanitizedCarName || '',
         vehicle_timing: sanitizedCarName || '',
         registered_at: kstDateTime,
       };
 
-      await syncInquiryToCrm(env, crmPhoneStatus, crmPayload);
+      let syncResult = { ok: false, reason: 'not_started' };
+      try {
+        syncResult = await syncInquiryToCrmWithRetry(env, crmPhoneStatus, crmPayload, 3);
+      } catch (syncErr) {
+        syncResult = { ok: false, error: String(syncErr) };
+        console.error('CRM sync threw', syncErr);
+      }
+
+      const syncFailed = !syncResult?.ok && !syncResult?.skipped;
+      if (syncFailed) {
+        console.error('CRM sync failed after retries', inquiryId, syncResult);
+      }
+
+      // 즉시 재시도 후에도 실패하면 백그라운드에서 한 번 더
+      if (syncFailed && context.waitUntil) {
+        context.waitUntil(
+          (async () => {
+            try {
+              await new Promise((r) => setTimeout(r, 2500));
+              const retry = await syncInquiryToCrmWithRetry(env, crmPhoneStatus, crmPayload, 2);
+              if (!retry?.ok && !retry?.skipped) {
+                console.error('CRM sync still failed after deferred retry', inquiryId, retry);
+              }
+            } catch (deferredErr) {
+              console.error('CRM deferred sync error', inquiryId, deferredErr);
+            }
+          })()
+        );
+      }
 
       return new Response(JSON.stringify({
         success: true,
-        id: inquiryId
+        id: inquiryId,
+        crm_sync: {
+          ok: Boolean(syncResult?.ok),
+          skipped: Boolean(syncResult?.skipped),
+          reason: syncResult?.reason || null,
+          method: syncResult?.method || null,
+        },
       }), {
         headers: {
           'Content-Type': 'application/json',

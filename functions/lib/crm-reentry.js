@@ -5,6 +5,7 @@ const LANDING_LABELS = {
 
 const DEFAULT_REENTRY_INGEST_URL = 'https://carplatform-crm.pages.dev/api/reentry-customers/ingest';
 const DEFAULT_CUSTOMER_INGEST_URL = 'https://carplatform-crm.pages.dev/api/customers/ingest';
+const INSERT_MAX_ATTEMPTS = 8;
 
 export function getCrmDb(env) {
   return env?.['carplatform-crm-db'] || null;
@@ -36,6 +37,20 @@ function normalizedPhoneSql(column) {
 function formatLandingRoute(sourceSite) {
   const key = String(sourceSite || '').trim().toLowerCase().replace(/^www\./, '');
   return key || '-';
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isUniqueConflict(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return (
+    message.includes('unique') ||
+    message.includes('constraint') ||
+    message.includes('primary key') ||
+    message.includes('SQLITE_CONSTRAINT')
+  );
 }
 
 async function findPhoneRow(db, table, phoneDigits) {
@@ -84,33 +99,60 @@ async function insertCustomerDirect(crmDb, payload) {
     return { ok: false, skipped: true, reason: 'blacklisted' };
   }
 
+  const existing = await findPhoneRow(crmDb, 'customers', phoneDigits);
+  if (existing?.row_id) {
+    return { ok: true, method: 'd1', m_idx: existing.row_id, already: true };
+  }
+
   const phone = formatPhoneDisplay(phoneDigits);
   const route = formatLandingRoute(payload.source_site);
   const registeredAt = payload.registered_at || new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const belong = String(payload.belong || payload.affiliation || '').trim() || null;
+  let lastError = null;
 
-  const mIdx = await getNextCustomerId(crmDb);
-  const listNo = await getNextListNo(crmDb);
+  for (let attempt = 1; attempt <= INSERT_MAX_ATTEMPTS; attempt += 1) {
+    const mIdx = await getNextCustomerId(crmDb);
+    const listNo = await getNextListNo(crmDb);
 
-  await crmDb
-    .prepare(`
-      INSERT INTO customers (
-        m_idx, list_no, name, phone, route, finance, vehicle_timing,
-        manager, manager_account_id, status, registered_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, '미등록', ?)
-    `)
-    .bind(
-      mIdx,
-      listNo,
-      payload.name,
-      phone,
-      route,
-      payload.finance || null,
-      payload.vehicle_timing || payload.memo || null,
-      registeredAt,
-    )
-    .run();
+    try {
+      await crmDb
+        .prepare(`
+          INSERT INTO customers (
+            m_idx, list_no, name, phone, route, belong, finance, vehicle_timing,
+            manager, manager_account_id, status, registered_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, '미등록', ?)
+        `)
+        .bind(
+          mIdx,
+          listNo,
+          payload.name,
+          phone,
+          route,
+          belong,
+          payload.finance || null,
+          payload.vehicle_timing || payload.memo || null,
+          registeredAt,
+        )
+        .run();
 
-  return { ok: true, method: 'd1', m_idx: mIdx };
+      return { ok: true, method: 'd1', m_idx: mIdx, attempts: attempt };
+    } catch (error) {
+      lastError = error;
+
+      const again = await findPhoneRow(crmDb, 'customers', phoneDigits);
+      if (again?.row_id) {
+        return { ok: true, method: 'd1', m_idx: again.row_id, already: true, attempts: attempt };
+      }
+
+      if (!isUniqueConflict(error) || attempt >= INSERT_MAX_ATTEMPTS) {
+        throw error;
+      }
+
+      await sleep(15 * attempt);
+    }
+  }
+
+  throw lastError || new Error('CRM customer insert failed');
 }
 
 async function moveCustomerToReentry(crmDb, phoneDigits, groupKey) {
@@ -341,26 +383,39 @@ async function postCrmIngest(env, url, payload) {
 
 export async function sendReentryIngest(env, payload) {
   const crmDb = getCrmDb(env);
+  let d1Error = null;
 
   if (crmDb) {
     try {
       return await insertReentryDirect(crmDb, payload);
     } catch (error) {
+      d1Error = error;
       console.error('CRM reentry D1 insert failed, fallback HTTP', error);
     }
   }
 
   const url = String(env?.CRM_REENTRY_INGEST_URL || DEFAULT_REENTRY_INGEST_URL).trim();
-  return postCrmIngest(env, url, payload);
+  const httpResult = await postCrmIngest(env, url, payload);
+
+  if (!httpResult.ok && d1Error) {
+    return {
+      ...httpResult,
+      d1_error: String(d1Error?.message || d1Error),
+    };
+  }
+
+  return httpResult;
 }
 
 export async function sendCustomerIngest(env, payload) {
   const crmDb = getCrmDb(env);
+  let d1Error = null;
 
   if (crmDb) {
     try {
       return await insertCustomerDirect(crmDb, payload);
     } catch (error) {
+      d1Error = error;
       console.error('CRM customer D1 insert failed, fallback HTTP', error);
     }
   }
@@ -370,6 +425,13 @@ export async function sendCustomerIngest(env, payload) {
 
   if (!result.ok && result.status === 409 && result.data?.duplicate) {
     return sendReentryIngest(env, payload);
+  }
+
+  if (!result.ok && d1Error) {
+    return {
+      ...result,
+      d1_error: String(d1Error?.message || d1Error),
+    };
   }
 
   return result;
@@ -390,3 +452,35 @@ export async function syncInquiryToCrm(env, crmPhoneStatus, payload) {
 
   return { ok: false, skipped: true, reason: crmPhoneStatus?.status || 'unknown' };
 }
+
+/** 동기화 실패 시 즉시 재시도 (최대 attempts회) */
+export async function syncInquiryToCrmWithRetry(env, crmPhoneStatus, payload, attempts = 3) {
+  let last = { ok: false, reason: 'not_attempted' };
+
+  for (let i = 1; i <= attempts; i += 1) {
+    // 매 시도마다 CRM 상태 재확인 (중간에 다른 요청이 넣은 경우 재진입 처리)
+    let status = crmPhoneStatus;
+    const crmDb = getCrmDb(env);
+    if (crmDb && payload?.phone) {
+      try {
+        status = await getCrmPhoneStatus(crmDb, normalizePhoneDigits(payload.phone));
+      } catch (error) {
+        console.error('getCrmPhoneStatus retry failed', error);
+      }
+    }
+
+    last = await syncInquiryToCrm(env, status, payload);
+
+    if (last?.ok || last?.skipped) {
+      return { ...last, attempts: i };
+    }
+
+    if (i < attempts) {
+      await sleep(40 * i);
+    }
+  }
+
+  return { ...last, attempts };
+}
+
+export { LANDING_LABELS };
