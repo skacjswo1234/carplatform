@@ -8,6 +8,7 @@ import {
 import {
   ensureInquiryCrmSyncColumns,
   listInquiriesNeedingCrmSync,
+  listInquiriesForCrmReconcile,
   updateInquiryCrmSync,
   toKstDatetime,
 } from '../lib/crm-sync-status.js';
@@ -29,6 +30,11 @@ function json(data, status = 200) {
   });
 }
 
+function todayStartKst() {
+  const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return `${d.toISOString().slice(0, 10)} 00:00:00`;
+}
+
 function toPayload(row) {
   return {
     source_site: 'carplatform.shop',
@@ -44,65 +50,32 @@ function toPayload(row) {
   };
 }
 
-async function loadMissingRows(env, db, { since, limit, ids = [] }, waitUntil) {
-  const crmDb = getCrmDb(env);
-  const scanLimit = Math.min(500, Math.max(Number(limit) || 100, 100));
-  let rows = await listInquiriesNeedingCrmSync(db, { since, limit: scanLimit });
-
-  if (ids.length) {
-    const allow = new Set(ids);
-    rows = rows.filter((row) => allow.has(Number(row.id)));
+async function markAlreadyBatch(db, alreadyRows) {
+  if (!alreadyRows.length) return;
+  const detail = JSON.stringify({
+    status: 'ok',
+    reason: 'already_in_crm',
+    method: 'reconcile',
+  });
+  const now = toKstDatetime();
+  for (let i = 0; i < alreadyRows.length; i += 40) {
+    const chunk = alreadyRows.slice(i, i + 40);
+    const placeholders = chunk.map(() => '?').join(',');
+    await db
+      .prepare(
+        `UPDATE inquiries
+         SET crm_sync_status = 'ok',
+             crm_sync_detail = ?,
+             crm_synced_at = ?
+         WHERE id IN (${placeholders})`
+      )
+      .bind(detail, now, ...chunk.map((r) => Number(r.id)))
+      .run();
   }
-
-  const filtered = await filterMissingFromCrm(crmDb, rows, (row) => row.phone);
-  const alreadyRows = filtered.alreadyRows || [];
-  rows = (filtered.missing || []).slice(0, Math.max(1, Number(limit) || 100));
-
-  if (alreadyRows.length && typeof waitUntil === 'function') {
-    waitUntil(
-      (async () => {
-        const detail = JSON.stringify({
-          status: 'ok',
-          reason: 'already_in_crm',
-          method: 'reconcile',
-        });
-        const now = toKstDatetime();
-        for (let i = 0; i < alreadyRows.length; i += 40) {
-          const chunk = alreadyRows.slice(i, i + 40);
-          const placeholders = chunk.map(() => '?').join(',');
-          try {
-            await db
-              .prepare(
-                `UPDATE inquiries
-                 SET crm_sync_status = 'ok',
-                     crm_sync_detail = ?,
-                     crm_synced_at = ?
-                 WHERE id IN (${placeholders})`
-              )
-              .bind(detail, now, ...chunk.map((r) => Number(r.id)))
-              .run();
-          } catch (error) {
-            console.error('reconcile batch failed', error);
-          }
-        }
-      })()
-    );
-  }
-
-  return {
-    crmDb,
-    rows,
-    reconciled: alreadyRows.length,
-  };
 }
 
 export async function onRequestOptions() {
   return new Response(null, { headers: CORS });
-}
-
-function defaultSinceKst(days = 7) {
-  const d = new Date(Date.now() + 9 * 60 * 60 * 1000 - days * 24 * 60 * 60 * 1000);
-  return `${d.toISOString().slice(0, 10)} 00:00:00`;
 }
 
 export async function onRequestGet(context) {
@@ -113,22 +86,17 @@ export async function onRequestGet(context) {
     await ensureInquiryCrmSyncColumns(db);
 
     const url = new URL(request.url);
-    const since = (url.searchParams.get('since') || defaultSinceKst(7)).trim();
+    const since = (url.searchParams.get('since') || todayStartKst()).trim();
     const limit = Number(url.searchParams.get('limit') || 100);
-    const { rows, reconciled } = await loadMissingRows(
-      env,
-      db,
-      { since, limit },
-      context.waitUntil?.bind(context)
-    );
+    const rows = await listInquiriesNeedingCrmSync(db, { since, limit });
 
     return json({
       success: true,
       since,
+      mode: 'live_failures',
       count: rows.length,
       items: rows,
-      reconciled: reconciled || 0,
-      note: 'CRM customers/reentry에 없는 전화번호만 표시합니다.',
+      note: '오늘부터 동기화 실패·대기 건만 표시합니다. 과거 대조는 오늘까지 CRM 대조를 한 번 실행하세요.',
     });
   } catch (error) {
     console.error('crm-resync GET', error);
@@ -150,23 +118,57 @@ export async function onRequestPost(context) {
       body = {};
     }
 
-    const since = String(body.since || defaultSinceKst(7)).trim();
+    const liveSince = todayStartKst();
+    const action = String(body.action || '').trim();
     const limit = Number(body.limit || 100);
+
+    // 과거 1회 대조
+    if (action === 'reconcile') {
+      const crmDb = getCrmDb(env);
+      const reconcileSince = String(body.since || '2026-09-01 00:00:00').trim();
+      const until = String(body.until || liveSince).trim();
+      const scanLimit = Math.min(2000, Math.max(Number(limit) || 1000, 100));
+
+      const candidates = await listInquiriesForCrmReconcile(db, {
+        since: reconcileSince,
+        until,
+        limit: scanLimit,
+      });
+
+      const filtered = await filterMissingFromCrm(crmDb, candidates, (row) => row.phone);
+      const alreadyRows = filtered.alreadyRows || [];
+      const missing = filtered.missing || [];
+
+      await markAlreadyBatch(db, alreadyRows);
+
+      return json({
+        success: true,
+        action: 'reconcile',
+        since: reconcileSince,
+        until,
+        scanned: candidates.length,
+        already_in_crm: alreadyRows.length,
+        missing_count: missing.length,
+        items: missing.slice(0, Math.min(200, limit)),
+        note: '오늘 이전 건을 CRM 전화번호와 1회 비교했습니다. 이미 있는 건은 ok로 정리했습니다.',
+      });
+    }
+
+    const since = String(body.since || liveSince).trim();
     const requestIds = Array.isArray(body.ids)
       ? body.ids.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
       : [];
 
-    const { crmDb, rows } = await loadMissingRows(
-      env,
-      db,
-      {
-        since,
-        limit,
-        ids: requestIds,
-      },
-      context.waitUntil?.bind(context)
-    );
+    let rows = await listInquiriesNeedingCrmSync(db, {
+      since,
+      limit: Math.min(200, Math.max(1, limit)),
+    });
+    if (requestIds.length) {
+      const allow = new Set(requestIds);
+      rows = rows.filter((row) => allow.has(Number(row.id)));
+    }
 
+    const crmDb = getCrmDb(env);
     const results = [];
 
     for (const row of rows) {

@@ -52,14 +52,47 @@ export async function updateInquiryCrmSync(db, inquiryId, syncResult) {
 export async function listInquiriesNeedingCrmSync(db, { since = '', limit = 100 } = {}) {
   if (!db) return [];
   await ensureInquiryCrmSyncColumns(db);
-  // 상태와 무관하게 최근 접수를 가져와 CRM과 비교 (pending 오탐 방지)
-  const cap = Math.min(1000, Math.max(1, Number(limit) || 100));
+  // 접수 시 기록된 동기화 실패/대기만 (CRM 전체 전화 비교 없음)
+  const cap = Math.min(500, Math.max(1, Number(limit) || 100));
   const params = [];
-  let where = '1=1';
+  let where = `crm_sync_status IN ('pending', 'failed')`;
 
   if (since) {
     where += ` AND created_at >= ?`;
     params.push(String(since));
+  }
+
+  const result = await db
+    .prepare(
+      `SELECT id, wr_name as name, wr_subject as phone, wr_7 as affiliation,
+              wr_3 as vehicle_type, wr_4 as car_name, created_at,
+              crm_sync_status, crm_sync_detail
+       FROM inquiries
+       WHERE ${where}
+       ORDER BY created_at DESC
+       LIMIT ?`
+    )
+    .bind(...params, cap)
+    .all();
+
+  return result?.results || [];
+}
+
+/** 과거 대조용: 기간 안 ok가 아닌 접수 (1회 CRM 비교용) */
+export async function listInquiriesForCrmReconcile(db, { since = '', until = '', limit = 1000 } = {}) {
+  if (!db) return [];
+  await ensureInquiryCrmSyncColumns(db);
+  const cap = Math.min(2000, Math.max(1, Number(limit) || 1000));
+  const params = [];
+  let where = `crm_sync_status NOT IN ('ok', 'skipped')`;
+
+  if (since) {
+    where += ` AND created_at >= ?`;
+    params.push(String(since));
+  }
+  if (until) {
+    where += ` AND created_at < ?`;
+    params.push(String(until));
   }
 
   const result = await db

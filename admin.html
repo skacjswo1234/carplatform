@@ -83,10 +83,11 @@
 
         <!-- CRM 미동기화 -->
         <div class="page-content" id="crmsyncPage">
-            <p class="ipblock-lead">랜딩에는 접수됐지만 CRM으로 못 넘어간 건입니다. 버튼으로 CRM에 올릴 수 있습니다.</p>
+            <p class="ipblock-lead">오늘부터 동기화에 실패한 문의만 모읍니다. 과거 건은 아래 <strong>오늘까지 CRM 대조</strong>를 한 번 실행해 정리하세요.</p>
             <div class="crm-sync-toolbar">
                 <button class="btn-primary" id="crmSyncRefreshBtn" type="button">새로고침</button>
-                <button class="btn-primary" id="crmSyncAllBtn" type="button">전체 CRM으로 올리기</button>
+                <button class="btn-primary" id="crmSyncReconcileBtn" type="button">오늘까지 CRM 대조</button>
+                <button class="btn-primary" id="crmSyncAllBtn" type="button">실패 건 CRM으로 올리기</button>
             </div>
             <p id="crmSyncSummary" class="ipblock-lead">불러오는 중…</p>
             <div class="table-container">

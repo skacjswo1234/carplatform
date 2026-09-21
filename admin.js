@@ -33,21 +33,20 @@ async function loadCrmSyncFails() {
     const summary = document.getElementById('crmSyncSummary');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="6" class="loading">불러오는 중...</td></tr>';
-    showAdminLoading('미동기화 목록을 불러오는 중…');
+    showAdminLoading('실패 목록을 불러오는 중…');
     try {
-        const sinceDate = new Date(Date.now() + 9 * 60 * 60 * 1000 - 7 * 24 * 60 * 60 * 1000);
-        const since = `${sinceDate.toISOString().slice(0, 10)} 00:00:00`;
-        const response = await fetch(
-            `${API_BASE_URL}/crm-resync?since=${encodeURIComponent(since)}&limit=100`
-        );
+        // since 미지정 → 서버가 오늘 00:00부터 실패/pending만 반환
+        const response = await fetch(`${API_BASE_URL}/crm-resync?limit=100`);
         const data = await response.json();
         if (!response.ok || !data.success) {
             throw new Error(data.error || '불러오기 실패');
         }
         crmSyncRows = data.items || [];
-        if (summary) summary.textContent = `미동기화 ${crmSyncRows.length}건`;
+        if (summary) {
+            summary.textContent = `오늘부터 동기화 실패/대기 ${crmSyncRows.length}건`;
+        }
         if (!crmSyncRows.length) {
-            tbody.innerHTML = '<tr><td colspan="6">미동기화 건이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">오늘 이후 실패 건이 없습니다.</td></tr>';
             return;
         }
         tbody.innerHTML = crmSyncRows.map((row) => `
@@ -64,6 +63,43 @@ async function loadCrmSyncFails() {
         tbody.innerHTML = '<tr><td colspan="6">불러오기 실패</td></tr>';
         console.error(error);
         showMessageModal(error.message || '불러오기 실패', 'error');
+    } finally {
+        hideAdminLoading();
+    }
+}
+
+async function reconcileCrmSync() {
+    const ok = await askConfirmModal({
+        title: '오늘까지 CRM 대조',
+        message: '오늘 이전 접수를 CRM 전화번호와 한 번 비교합니다. 이미 CRM에 있는 건은 상태로만 정리하며 CRM 데이터는 수정하지 않습니다.',
+        confirmText: '대조 실행',
+        cancelText: '취소',
+        danger: false,
+    });
+    if (!ok) return;
+
+    showAdminLoading('과거 건 CRM 대조 중…');
+    try {
+        const response = await fetch(`${API_BASE_URL}/crm-resync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'reconcile',
+                since: '2026-09-01 00:00:00',
+                limit: 1000,
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || '대조 실패');
+        }
+        showMessageModal(
+            `대조 완료: 스캔 ${data.scanned || 0}건, 이미 CRM ${data.already_in_crm || 0}건 정리, 미존재 ${data.missing_count || 0}건`,
+            'success'
+        );
+        await loadCrmSyncFails();
+    } catch (error) {
+        showMessageModal(error.message || '대조 실패', 'error');
     } finally {
         hideAdminLoading();
     }
@@ -197,6 +233,10 @@ function initEventListeners() {
     if (crmSyncRefreshBtn) {
         crmSyncRefreshBtn.addEventListener('click', loadCrmSyncFails);
     }
+    const crmSyncReconcileBtn = document.getElementById('crmSyncReconcileBtn');
+    if (crmSyncReconcileBtn) {
+        crmSyncReconcileBtn.addEventListener('click', reconcileCrmSync);
+    }
     const crmSyncAllBtn = document.getElementById('crmSyncAllBtn');
     if (crmSyncAllBtn) {
         crmSyncAllBtn.addEventListener('click', async function () {
@@ -206,7 +246,7 @@ function initEventListeners() {
             }
             const ok = await askConfirmModal({
                 title: 'CRM 업로드',
-                message: `미동기화 ${crmSyncRows.length}건을 CRM으로 올릴까요?`,
+                message: `실패/대기 ${crmSyncRows.length}건을 CRM으로 올릴까요?`,
                 confirmText: '올리기',
                 cancelText: '취소',
                 danger: false,
