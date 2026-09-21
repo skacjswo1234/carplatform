@@ -34,6 +34,71 @@ function normalizedPhoneSql(column) {
   return `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${column}, '-', ''), ' ', ''), '.', ''), '(', ''), ')', '')`;
 }
 
+/** CRM customers/reentry에 이미 있는 전화번호(숫자만) Set */
+export async function findExistingCrmPhoneDigits(crmDb, phoneDigitsList) {
+  const found = new Set();
+  if (!crmDb) return found;
+
+  const unique = [...new Set((phoneDigitsList || []).map((v) => normalizePhoneDigits(v)).filter(Boolean))];
+  if (!unique.length) return found;
+
+  const norm = normalizedPhoneSql('phone');
+  const chunkSize = 40;
+
+  for (let i = 0; i < unique.length; i += chunkSize) {
+    const chunk = unique.slice(i, i + chunkSize);
+    const placeholders = chunk.map(() => '?').join(',');
+
+    const customers = await crmDb
+      .prepare(`SELECT ${norm} AS digits FROM customers WHERE ${norm} IN (${placeholders})`)
+      .bind(...chunk)
+      .all();
+    const reentry = await crmDb
+      .prepare(`SELECT ${norm} AS digits FROM reentry_customers WHERE ${norm} IN (${placeholders})`)
+      .bind(...chunk)
+      .all();
+
+    for (const row of customers?.results || []) {
+      if (row?.digits) found.add(String(row.digits));
+    }
+    for (const row of reentry?.results || []) {
+      if (row?.digits) found.add(String(row.digits));
+    }
+  }
+
+  return found;
+}
+
+/**
+ * 후보 문의 중 CRM에 없는 것만 반환.
+ * CRM에 이미 있으면 markAlreadyInCrm(row)로 상태 ok 처리.
+ */
+export async function filterMissingFromCrm(crmDb, rows, getPhone, markAlreadyInCrm) {
+  if (!Array.isArray(rows) || !rows.length) return [];
+
+  const phones = rows.map((row) => normalizePhoneDigits(getPhone(row)));
+  const existing = await findExistingCrmPhoneDigits(crmDb, phones);
+  const missing = [];
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    const digits = phones[i];
+    if (digits && existing.has(digits)) {
+      if (typeof markAlreadyInCrm === 'function') {
+        try {
+          await markAlreadyInCrm(row);
+        } catch (error) {
+          console.error('markAlreadyInCrm failed', error);
+        }
+      }
+      continue;
+    }
+    missing.push(row);
+  }
+
+  return missing;
+}
+
 function formatLandingRoute(sourceSite) {
   const key = String(sourceSite || '').trim().toLowerCase().replace(/^www\./, '');
   return key || '-';

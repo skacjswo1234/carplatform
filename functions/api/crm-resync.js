@@ -3,6 +3,7 @@ import {
   getCrmPhoneStatus,
   normalizePhoneDigits,
   syncInquiryToCrmWithRetry,
+  filterMissingFromCrm,
 } from '../lib/crm-reentry.js';
 import {
   ensureInquiryCrmSyncColumns,
@@ -43,6 +44,36 @@ function toPayload(row) {
   };
 }
 
+async function loadMissingRows(env, db, { since, limit, ids = [] }) {
+  const crmDb = getCrmDb(env);
+  const scanLimit = Math.min(1000, Math.max(Number(limit) || 100, 200));
+  let rows = await listInquiriesNeedingCrmSync(db, { since, limit: scanLimit });
+
+  if (ids.length) {
+    const allow = new Set(ids);
+    rows = rows.filter((row) => allow.has(Number(row.id)));
+  }
+
+  rows = await filterMissingFromCrm(
+    crmDb,
+    rows,
+    (row) => row.phone,
+    async (row) => {
+      await updateInquiryCrmSync(db, row.id, {
+        ok: true,
+        already: true,
+        reason: 'already_in_crm',
+        method: 'reconcile',
+      });
+    }
+  );
+
+  return {
+    crmDb,
+    rows: rows.slice(0, Math.max(1, Number(limit) || 100)),
+  };
+}
+
 export async function onRequestOptions() {
   return new Response(null, { headers: CORS });
 }
@@ -57,9 +88,15 @@ export async function onRequestGet(context) {
     const url = new URL(request.url);
     const since = (url.searchParams.get('since') || '2026-09-01 00:00:00').trim();
     const limit = Number(url.searchParams.get('limit') || 200);
-    const items = await listInquiriesNeedingCrmSync(db, { since, limit });
+    const { rows } = await loadMissingRows(env, db, { since, limit });
 
-    return json({ success: true, since, count: items.length, items });
+    return json({
+      success: true,
+      since,
+      count: rows.length,
+      items: rows,
+      note: 'CRM customers/reentry에 없는 전화번호만 표시합니다.',
+    });
   } catch (error) {
     console.error('crm-resync GET', error);
     return json({ success: false, error: String(error?.message || error) }, 500);
@@ -86,13 +123,12 @@ export async function onRequestPost(context) {
       ? body.ids.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
       : [];
 
-    let rows = await listInquiriesNeedingCrmSync(db, { since, limit });
-    if (requestIds.length) {
-      const allow = new Set(requestIds);
-      rows = rows.filter((row) => allow.has(Number(row.id)));
-    }
+    const { crmDb, rows } = await loadMissingRows(env, db, {
+      since,
+      limit,
+      ids: requestIds,
+    });
 
-    const crmDb = getCrmDb(env);
     const results = [];
 
     for (const row of rows) {

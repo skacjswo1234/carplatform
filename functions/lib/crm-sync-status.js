@@ -52,9 +52,10 @@ export async function updateInquiryCrmSync(db, inquiryId, syncResult) {
 export async function listInquiriesNeedingCrmSync(db, { since = '', limit = 100 } = {}) {
   if (!db) return [];
   await ensureInquiryCrmSyncColumns(db);
-  const cap = Math.min(500, Math.max(1, Number(limit) || 100));
+  // 상태와 무관하게 최근 접수를 가져와 CRM과 비교 (pending 오탐 방지)
+  const cap = Math.min(1000, Math.max(1, Number(limit) || 100));
   const params = [];
-  let where = `(crm_sync_status IS NULL OR crm_sync_status IN ('pending', 'failed', ''))`;
+  let where = '1=1';
 
   if (since) {
     where += ` AND created_at >= ?`;
@@ -68,7 +69,7 @@ export async function listInquiriesNeedingCrmSync(db, { since = '', limit = 100 
               crm_sync_status, crm_sync_detail
        FROM inquiries
        WHERE ${where}
-       ORDER BY created_at ASC
+       ORDER BY created_at DESC
        LIMIT ?`
     )
     .bind(...params, cap)
